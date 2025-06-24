@@ -39,3 +39,9 @@ target_include_directories(imgui PUBLIC
 target_link_libraries(imgui PRIVATE SDL3::SDL3)
 
 target_link_libraries(PCKPP PRIVATE imgui)
+
+set(SDL3_DLL "${CMAKE_BINARY_DIR}/vendor/SDL/SDL3.dll")
+
+add_custom_command(TARGET PCKPP POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDL3_DLL}" $<TARGET_FILE_DIR:PCKPP>
+)
