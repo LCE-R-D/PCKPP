@@ -1,7 +1,7 @@
 PCK++
 -----
 
-A C++ Rewrite of PCK Studio! Not affiliated with Mojang Studios, 4J Studois, nor Microsoft. This is a non profit open source tool to improve on the existing [PCK Studio](https://github.com/PhoenixARC/-PCK-Studio).
+A C++ Rewrite of PCK Studio! Not affiliated with Mojang Studios, 4J Studios, nor Microsoft. This is a non profit open source tool to improve on the existing [PCK Studio](https://github.com/PhoenixARC/-PCK-Studio).
 
 Feel free to contribute (:
 
