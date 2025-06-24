@@ -1,23 +1,28 @@
-﻿cmake_minimum_required (VERSION 3.8)
-project ("PCKPP")
+﻿cmake_minimum_required (VERSION 3.30.5)
+project(PCKPP
+        VERSION 1.0.0.0
+        DESCRIPTION "A C++ Rewrite of PCK Studio, a tool to edit Minecraft Legacy Console Edition file formats!"
+        LANGUAGES CXX
+)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+enable_language(CXX)
 
-add_subdirectory(vendor/glfw)
-add_subdirectory(vendor/nativefiledialog-extended)
+file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
+set(SRC ${SOURCE_FILES})
 
-add_executable(PCKPP "src/main.cpp" "src/PCK/PCKAssetFile.h"  "src/PCK/PCKFile.h")
+add_executable(PCKPP ${SRC})
 
-target_include_directories(PCKPP PRIVATE vendor/nativefiledialog-extended/src/include)
-target_link_libraries(PCKPP PRIVATE nfd glfw)
+find_package(OpenGL REQUIRED)
+target_link_libraries(PCKPP PRIVATE OpenGL::GL)
+target_link_libraries(PCKPP PRIVATE OpenGL::GLU)
 
-target_include_directories(PCKPP PRIVATE vendor/glfw/include)
+add_subdirectory(vendor/glad)
+target_link_libraries(PCKPP PRIVATE glad)
 
-if (WIN32)
-    target_compile_definitions(PCKPP PRIVATE GLFW_EXPOSE_NATIVE_WIN32)
-elseif (APPLE)
-    target_compile_definitions(PCKPP PRIVATE GLFW_EXPOSE_NATIVE_COCOA)
-elseif (UNIX)
-    target_compile_definitions(PCKPP PRIVATE GLFW_EXPOSE_NATIVE_X11)
-endif()
+add_subdirectory(vendor/sdl)
+target_link_libraries(PCKPP PRIVATE SDL3::SDL3)
 
 add_library(imgui
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui.cpp
@@ -25,18 +30,12 @@ add_library(imgui
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui_tables.cpp
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui_widgets.cpp
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui_demo.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/backends/imgui_impl_glfw.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/backends/imgui_impl_opengl3.cpp
- "src/PCK/PCKAssetFile.h"  "src/PCK/PCKFile.h")
+    ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/backends/imgui_impl_sdl3.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/backends/imgui_impl_opengl2.cpp)
 
-target_include_directories(imgui PUBLIC 
-    ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui 
-    ${CMAKE_CURRENT_LIST_DIR}/vendor/glfw/include
+target_include_directories(imgui PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui
 )
-target_link_libraries(PCKPP PRIVATE imgui opengl32)
+target_link_libraries(imgui PRIVATE SDL3::SDL3)
 
-set_target_properties(PCKPP PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS NO
-)
+target_link_libraries(PCKPP PRIVATE imgui)

@@ -1,9 +1,6 @@
 [submodule "imgui"]
 	path = vendor/imgui
 	url = https://github.com/ocornut/imgui
-[submodule "glfw"]
-	path = vendor/glfw
-	url = https://github.com/glfw/glfw
-[submodule "nativefiledialog-extended"]
-	path = vendor/nativefiledialog-extended
-	url = https://github.com/btzy/nativefiledialog-extended
+[submodule "vendor/sdl"]
+	path = vendor/sdl
+	url = https://github.com/libsdl-org/SDL.git
