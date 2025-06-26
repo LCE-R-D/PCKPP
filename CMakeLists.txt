@@ -31,14 +31,19 @@ add_library(imgui
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui_widgets.cpp
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui_demo.cpp
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/backends/imgui_impl_sdl3.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/backends/imgui_impl_opengl2.cpp)
+    ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/backends/imgui_impl_opengl2.cpp
+)
 
 target_include_directories(imgui PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui
+    ${CMAKE_CURRENT_LIST_DIR}/vendor/stb
 )
+
 target_link_libraries(imgui PRIVATE SDL3::SDL3)
 
 target_link_libraries(PCKPP PRIVATE imgui)
+
+target_link_libraries(imgui PRIVATE opengl32)
 
 set(SDL3_DLL "${CMAKE_BINARY_DIR}/vendor/SDL/SDL3.dll")
 
