@@ -119,3 +119,9 @@ const std::vector<PCKAssetFile>& PCKFile::getFiles() const
 {
 	return mFiles;
 }
+
+PCKFile::~PCKFile()
+{
+	mProperties.clear();
+	mFiles.clear();
+}

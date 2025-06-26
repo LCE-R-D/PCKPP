@@ -11,7 +11,7 @@ class PCKFile
 {
 public:
 	PCKFile() = default;
-	~PCKFile() = default;
+	~PCKFile();
 
 	void Read(const std::string& inpath);
 
