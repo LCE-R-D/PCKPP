@@ -1,22 +1,15 @@
-﻿#include <imgui.h>
-#include <SDL3/SDL.h>
-#include <cstdio>
-#include <backends/imgui_impl_sdl3.h>
-#include <backends/imgui_impl_opengl2.h>
-#include <glad/glad.h>
+﻿#include <cstdio>
 #include <vector>
 
 #include "IO/IO.h"
 #include "PCK/PCKFile.h"
+#include "Graphics/Graphics.h"
 
 SDL_Window* window{nullptr};
 SDL_GLContext context{nullptr};
 bool shouldClose{false};
 PCKFile* currentPCK{nullptr};
 int selectedFileIndex{0};
-
-GLuint currentTexture = 0;
-int currentTextureFileIndex = -1;
 
 void HandleMenuBar() {
 	if (ImGui::BeginMainMenuBar()) {
@@ -59,13 +52,13 @@ void HandleMenuBar() {
 
 void HandleFileTree()
 {
-	ImGui::SetNextWindowPos(ImVec2(0, 20), ImGuiCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(300, ImGui::GetIO().DisplaySize.y), ImGuiCond_Always);
-	ImGui::Begin("File Tree", nullptr,
-		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-
 	if (currentPCK)
 	{
+		ImGui::SetNextWindowPos(ImVec2(0, 20), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(300, ImGui::GetIO().DisplaySize.y), ImGuiCond_Always);
+		ImGui::Begin("File Tree", nullptr,
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
 		auto& files = currentPCK->getFiles();
 		for (int i = 0; i < files.size(); ++i)
 		{
@@ -76,9 +69,16 @@ void HandleFileTree()
 				selectedFileIndex = i;
 			}
 		}
-	}
 
-	ImGui::End();
+		ImGui::End();
+
+		// this is just for now I swear, just for testing, please don't kill me, thankies :3
+		auto& selectedFile = files[selectedFileIndex];
+		if (selectedFile.isImageType())
+		{
+			PreviewImage(selectedFile);
+		}
+	}
 }
 
 int main() {

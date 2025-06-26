@@ -30,7 +30,7 @@ void PCKAssetFile::addProperty(const std::string& key, const std::string& value)
 
 const PCKAssetFile::Type IMAGE_ASSET_TYPES[]{ PCKAssetFile::Type::SKIN, PCKAssetFile::Type::CAPE, PCKAssetFile::Type::TEXTURE };
 
-bool PCKAssetFile::isImageType()
+bool PCKAssetFile::isImageType() const
 {
 	return std::find(std::begin(IMAGE_ASSET_TYPES), std::end(IMAGE_ASSET_TYPES), mAssetType) != std::end(IMAGE_ASSET_TYPES);
 }

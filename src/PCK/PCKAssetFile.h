@@ -88,7 +88,7 @@ public:
 	Type getAssetType() const;
 
 	// Checks if the file is a Skin, Cape or Texture Asset Type
-	bool isImageType();
+	bool isImageType() const;
 
 	void addProperty(const std::string& key, const std::string& value);
 
