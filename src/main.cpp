@@ -11,32 +11,38 @@ bool shouldClose{false};
 PCKFile* currentPCK{nullptr};
 int selectedFileIndex{0};
 
+void OpenPCKFile()
+{
+	SDL_DialogFileFilter filters[] = {
+		{ "Minecraft LCE DLC Files (*.pck)", "pck" }
+	};
+
+	std::string filePath = IO::OpenFile(window, filters);
+
+	if (!filePath.empty()) {
+		delete currentPCK;
+		currentPCK = new PCKFile();
+
+		try
+		{
+			selectedFileIndex = 0; // important lol; otherwise the program will have an indexing issue if there were more files in the last pck than the current pck
+			currentPCK->Read(filePath);
+		}
+		catch (std::exception& e)
+		{
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", e.what(), window);
+		}
+	}
+	else {
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "User aborted operation or the file couldn't be opened.", window);
+	}
+}
+
 void HandleMenuBar() {
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
-				SDL_DialogFileFilter filters[] = {
-					{ "Minecraft LCE DLC Files (*.pck)", "pck" }
-				};
-
-				std::string filePath = IO::OpenFile(window, filters);
-
-				if (!filePath.empty()) {
-					delete currentPCK;
-					currentPCK = new PCKFile();
-
-					try
-					{
-						currentPCK->Read(filePath);
-					}
-					catch (std::exception& e)
-					{
-						SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", e.what(), window);
-					}
-				}
-				else {
-					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "User aborted operation or the file couldn't be opened.", window);
-				}
+				OpenPCKFile();
 			}
 			if (ImGui::MenuItem("Save", "Ctrl+S")) {
 				// Save code here
@@ -145,6 +151,13 @@ int main() {
 		ImGui_ImplOpenGL2_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
+
+		ImGuiIO& io = ImGui::GetIO();
+		// make sure to pass false or else it will trigger multiple times
+		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O, false))
+		{
+			OpenPCKFile();
+		}
 
 		HandleMenuBar();
 		HandleFileTree();
