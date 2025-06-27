@@ -8,7 +8,7 @@
 #include <glad/glad.h>
 
 struct Texture {
-    GLuint id;
+    GLuint id{0};
     int width;
     int height;
 };
