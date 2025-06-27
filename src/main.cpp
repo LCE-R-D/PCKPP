@@ -60,6 +60,21 @@ void HandleFileTree()
 			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
 		auto& files = currentPCK->getFiles();
+
+		// Handle arrow key input
+		ImGuiIO& io = ImGui::GetIO();
+		if (ImGui::IsWindowFocused())
+		{
+			if (ImGui::IsKeyPressed(ImGuiKey_UpArrow) && selectedFileIndex > 0)
+			{
+				selectedFileIndex--;
+			}
+			else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow) && selectedFileIndex < files.size() - 1)
+			{
+				selectedFileIndex++;
+			}
+		}
+
 		for (int i = 0; i < files.size(); ++i)
 		{
 			const auto& file = files[i];
