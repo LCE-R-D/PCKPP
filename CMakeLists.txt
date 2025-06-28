@@ -49,4 +49,7 @@ set(SDL3_DLL "${CMAKE_BINARY_DIR}/vendor/SDL/SDL3.dll")
 
 add_custom_command(TARGET PCKPP POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDL3_DLL}" $<TARGET_FILE_DIR:PCKPP>
+
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:PCKPP>/assets
 )
