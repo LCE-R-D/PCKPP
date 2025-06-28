@@ -85,6 +85,8 @@ void HandleFileTree()
 		{
 			const auto& file = files[i];
 			bool isSelected = (i == selectedFileIndex);
+			ImGui::Image((void*)(intptr_t)0, ImVec2(48, 48));
+			ImGui::SameLine();
 			if (ImGui::Selectable(file.getPath().c_str(), isSelected))
 			{
 				selectedFileIndex = i;
