@@ -14,5 +14,6 @@ struct Texture {
 };
 
 Texture LoadTextureFromMemory(const void* data, size_t size);
+Texture LoadTextureFromFile(const std::string& path);
 
 void PreviewImage(const PCKAssetFile& file);

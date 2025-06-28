@@ -45,6 +45,28 @@ Texture LoadTextureFromMemory(const void* data, size_t size)
 	return { tex, width, height };
 }
 
+Texture LoadTextureFromFile(const std::string& path)
+{
+	std::ifstream file(path, std::ios::binary | std::ios::ate);
+	if (!file)
+	{
+		SDL_Log("Failed to open image file: %s", path.c_str());
+		return {};
+	}
+
+	std::streamsize size = file.tellg();
+	file.seekg(0, std::ios::beg);
+
+	std::vector<unsigned char> buffer(size);
+	if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
+	{
+		SDL_Log("Failed to read image file: %s", path.c_str());
+		return {};
+	}
+
+	return LoadTextureFromMemory(buffer.data(), buffer.size());
+}
+
 // the texture specifically for the preview window
 Texture g_previewTexture = {};
 
