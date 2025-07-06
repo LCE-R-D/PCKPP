@@ -38,7 +38,7 @@ void HandleMenuBar() {
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
 				OpenPCKFile(GetWindow());
 			}
-			if (ImGui::MenuItem("Save", "Ctrl+S")) {
+			if (gCurrentPCK && ImGui::MenuItem("Save", "Ctrl+S")) {
 				// Save code here
 			}
 			ImGui::EndMenu();
@@ -203,6 +203,77 @@ static void ScrollToNode()
 	gKeyboardScrolled = false;
 }
 
+static void SaveNodeAsFile(const FileTreeNode& node, bool includeProperties = false)
+{
+	const std::string& path = node.file->getPath();
+
+	std::string ext = path.substr(path.find_last_of('.') + 1);
+
+	// Fallback extension if none found
+	if (ext.empty() || ext == path)
+		ext = "";
+
+	// Use static so memory stays valid while the dialog is open
+	static std::string nameStr;
+	static std::string patternStr;
+
+	nameStr = std::string(node.file->getAssetTypeString()) + " | *." + ext + " File";
+	patternStr = ext;
+
+	SDL_DialogFileFilter filter{};
+	filter.name = nameStr.c_str();
+	filter.pattern = patternStr.c_str();
+
+	IO::SaveFileDialog(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()), true, node.file->getProperties());
+}
+
+static void HandlePCKNodeContextMenu(const FileTreeNode& node)
+{
+	if (node.file && ImGui::BeginPopupContextItem()) {
+		if (ImGui::BeginMenu("Extract")) {
+			if (ImGui::MenuItem("File"))
+			{
+				SaveNodeAsFile(node);
+			}
+
+			bool hasProperties = node.file->getProperties().size() > 0;
+
+			if (hasProperties && ImGui::MenuItem("Properties"))
+			{
+				const std::string& path = node.file->getPath();
+
+				std::string ext = path.substr(path.find_last_of('.') + 1);
+
+				// Use static so memory stays valid while the dialog is open
+				static std::string nameStr;
+				static std::string patternStr;
+
+				nameStr = "Text File | *." + ext + ".txt" + " File";
+				patternStr = ext + ".txt";
+
+				SDL_DialogFileFilter filter{};
+				filter.name = nameStr.c_str();
+				filter.pattern = patternStr.c_str();
+
+				std::string propertyData{};
+
+				for (auto& p : node.file->getProperties())
+				{
+					propertyData += p.first + ' ' + p.second + '\n';
+				}
+
+				IO::SaveFileDialog(GetWindow(), &filter, { propertyData.begin(), propertyData.end() }, GetFileNameFromPath(node.file->getPath()) + ".txt", true);
+			}
+			if (hasProperties && ImGui::MenuItem("File with Properties"))
+			{
+				SaveNodeAsFile(node, true);
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndPopup();
+	}
+}
+
 // Renders the passed node, also handles children or the node
 static void RenderNode(const FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr) {
 	if (visibleList)
@@ -242,6 +313,8 @@ static void RenderNode(const FileTreeNode& node, std::vector<const FileTreeNode*
 		if (ImGui::Selectable((GetFileNameFromPath(file.getPath()) + "###" + file.getPath()).c_str(), isSelected))
 			gSelectedPath = node.path;
 	}
+
+	HandlePCKNodeContextMenu(node);
 }
 
 // Finds the currently selected file
