@@ -31,12 +31,7 @@ int main()
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
 
-		// make sure to pass false or else it will trigger multiple times
-		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O, false))
-		{
-			OpenPCKFile(window);
-		}
-
+		HandleInput();
 		HandleMenuBar();
 		HandleFileTree();
 

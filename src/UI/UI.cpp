@@ -1,6 +1,7 @@
 #include "UI.h"
 #include <iomanip>
 #include <sstream>
+#include <filesystem>
 #include <map>
 
 struct FileTreeNode {
@@ -30,6 +31,15 @@ static bool gShouldCloseFolder = false;
 
 PCKFile*& GetCurrentPCKFile() { return gCurrentPCK; }
 ImGuiIO*& GetImGuiIO() { return io; }
+
+void HandleInput()
+{
+	// make sure to pass false or else it will trigger multiple times
+	if (io->KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O, false))
+	{
+		OpenPCKFile(GetWindow());
+	}
+}
 
 // Handles the menu bar, functions are held in MenuFunctions.h/cpp
 void HandleMenuBar() {
@@ -405,8 +415,8 @@ void ResetUIData() {
 	gShouldOpenFolder = false;
 	gShouldCloseFolder = false;
 
-	gTreeNodes.clear();
 	gVisibleNodes.clear();
+	gTreeNodes.clear();
 }
 
 void UICleanup() {
