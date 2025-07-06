@@ -15,5 +15,6 @@ namespace IO
 		ENDIANESS_TOTAL
 	};
 
+	// For opening files with SDL's file system
 	std::string OpenFile(SDL_Window* window, SDL_DialogFileFilter* filters);
 }

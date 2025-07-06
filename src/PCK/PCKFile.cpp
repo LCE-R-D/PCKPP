@@ -80,7 +80,7 @@ void PCKFile::Read(const std::string& inpath)
 		auto& file = mFiles[i];
 		uint32_t propertyCount = reader.ReadInt32();
 
-		SDL_Log("\tSize: %u Bytes | Type: %u | Properties: %u | Path: %s", file.getFileSize(), (uint32_t)file.getAssetType(), propertyCount, file.getPath().c_str());
+		SDL_Log("\tSize: %u Bytes | Type: %u | Properties: %u | Path: %s", fileSizes[i], (uint32_t)file.getAssetType(), propertyCount, file.getPath().c_str());
 
 		for (int j{ 0 }; j < propertyCount; j++)
 		{

@@ -21,7 +21,7 @@ void PCKAssetFile::setPath(const std::string& inpath) {
 }
 
 PCKAssetFile::Type PCKAssetFile::getAssetType() const {
-	return mAssetType; 
+	return mAssetType;
 }
 
 void PCKAssetFile::addProperty(const std::string& key, const std::string& value) {

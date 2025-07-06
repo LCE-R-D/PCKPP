@@ -9,6 +9,7 @@ static std::condition_variable gCV;
 static std::string gSelectedFile;
 static std::atomic<bool> gDialogFinished(false);
 
+// Because SDL needs this
 void FileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
 {
 	{
