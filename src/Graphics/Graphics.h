@@ -13,7 +13,20 @@ struct Texture {
     int height;
 };
 
-Texture LoadTextureFromMemory(const void* data, size_t size);
-Texture LoadTextureFromFile(const std::string& path);
+// Loads texture from memory; also takes optional GL Filter Parameter
+Texture LoadTextureFromMemory(const void* data, size_t size, int glFilter = GL_NEAREST);
 
-void PreviewImage(const PCKAssetFile& file);
+// Loads texture from file path; also takes optional GL Filter Parameter
+Texture LoadTextureFromFile(const std::string& path, int glFilter = GL_NEAREST);
+
+// Gets the current SDL Window
+SDL_Window* GetWindow();
+
+// Just checks to see if quit was called somewhere
+bool shouldClose();
+
+// Setup Graphic related vendors
+bool GraphicsSetup();
+
+// Cleanup Graphic related vendors
+void GraphicsCleanup();
