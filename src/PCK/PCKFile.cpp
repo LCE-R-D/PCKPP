@@ -1,6 +1,8 @@
 #include "PCKFile.h"
 #include "../IO/BinaryReader.h"
 
+const char* XML_VERSION_STRING{"XMLVERSION"}; // used for advanced/full box support for skins
+
 void PCKFile::Read(const std::string& inpath)
 {
 	BinaryReader reader(inpath);
@@ -47,6 +49,14 @@ void PCKFile::Read(const std::string& inpath)
 		mProperties.push_back(property);
 
 		reader.ReadInt32(); // skip 4 bytes
+	}
+
+	bool found = std::any_of(mProperties.begin(), mProperties.end(),
+		[](const std::string& property) { return property == XML_VERSION_STRING; });
+
+	if (found) {
+		mXMLVersion = reader.ReadInt32();
+		SDL_Log("XML Version: %u", mXMLVersion);
 	}
 
 	uint32_t fileCount = reader.ReadInt32();

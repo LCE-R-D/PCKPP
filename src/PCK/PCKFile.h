@@ -30,6 +30,7 @@ public:
 
 private:
 	IO::Endianness mEndianess{ IO::Endianness::LITTLE };
+	uint32_t mXMLVersion{};
 	uint32_t mVersion{};
 	std::vector<std::string> mProperties{};
 	std::vector<PCKAssetFile> mFiles{};
