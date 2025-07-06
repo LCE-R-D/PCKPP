@@ -189,7 +189,7 @@ static void ScrollToNode()
 	float viewMax = viewMin + ImGui::GetWindowSize().y;
 
 	// Scroll if node is not fully visible
-	if (itemMin < viewMin || itemMax > viewMax)
+	if (itemMin < viewMax || itemMax > viewMin)
 	{
 		ImGui::SetScrollHereY(0.5f);
 	}
