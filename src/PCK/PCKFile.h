@@ -23,7 +23,7 @@ public:
 	IO::Endianness getEndianness();
 
 	// Gets Registered Property Keys from the PCK File
-	const std::vector<std::string>& getProperties() const;
+	const std::vector<std::string>& getPropertyKeys() const;
 
 	// Gets Files from the PCK File
 	const std::vector<PCKAssetFile>& getFiles() const;

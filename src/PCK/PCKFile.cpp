@@ -60,24 +60,20 @@ void PCKFile::Read(const std::string& inpath)
 		uint32_t fileType = reader.ReadInt32();
 		uint32_t filePathLength = reader.ReadInt32();
 
-		std::string filePath = reader.ReadWideString(filePathLength); // it's easier to only have to worry about one slash type
-
+		std::string filePath = reader.ReadWideString(filePathLength);
 		std::replace(filePath.begin(), filePath.end(), '\\', '/');
-
-		fileSizes.push_back(fileSize);
-
-		PCKAssetFile file{ filePath, {}, (PCKAssetFile::Type)fileType };
 
 		reader.ReadInt32(); // skip 4 bytes
 
-		mFiles.push_back(file);
+		mFiles.emplace_back(filePath, PCKAssetFile::Type(fileType));
+		fileSizes.push_back(fileSize);
 	}
 
 	SDL_Log("Files: %u", fileCount);
 
 	for (int i{0}; i < mFiles.size(); ++i)
 	{
-		auto& file = mFiles[i];
+		PCKAssetFile& file = mFiles[i];
 		uint32_t propertyCount = reader.ReadInt32();
 
 		SDL_Log("\tSize: %u Bytes | Type: %u | Properties: %u | Path: %s", fileSizes[i], (uint32_t)file.getAssetType(), propertyCount, file.getPath().c_str());
@@ -92,11 +88,14 @@ void PCKFile::Read(const std::string& inpath)
 			reader.ReadInt32(); // skip 4 bytes
 
 			SDL_Log("\t\tProperty: %s %s", propertyKey.c_str(), propertyValue.c_str());
+
+			file.addProperty(propertyKey, propertyValue);
 		}
 
 		std::vector<unsigned char> fileData(fileSizes[i]);
 		reader.ReadData(fileData.data(), fileData.size());
 		file.setData(std::move(fileData));
+		SDL_Log("TEST %u", file.getProperties().size());
 	}
 }
 
@@ -110,7 +109,7 @@ IO::Endianness PCKFile::getEndianness()
 	return mEndianess;
 }
 
-const std::vector<std::string>& PCKFile::getProperties() const
+const std::vector<std::string>& PCKFile::getPropertyKeys() const
 {
 	return mProperties;
 }
