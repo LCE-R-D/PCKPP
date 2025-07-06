@@ -95,7 +95,6 @@ void PCKFile::Read(const std::string& inpath)
 		std::vector<unsigned char> fileData(fileSizes[i]);
 		reader.ReadData(fileData.data(), fileData.size());
 		file.setData(std::move(fileData));
-		SDL_Log("TEST %u", file.getProperties().size());
 	}
 }
 
