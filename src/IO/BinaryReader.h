@@ -28,6 +28,8 @@ public:
 
 	void ReadData(void* buffer, size_t size);
 
+	void Close();
+
 private:
 	std::ifstream mStream;
 	IO::Endianness mEndianness = IO::Endianness::LITTLE; // default to little since Little is used by more editions of the game

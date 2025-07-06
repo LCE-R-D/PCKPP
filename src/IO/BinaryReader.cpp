@@ -8,6 +8,12 @@ BinaryReader::BinaryReader(const std::string& filepath)
 	}
 }
 
+BinaryReader::~BinaryReader()
+{
+	if(mStream)
+		mStream.close();
+}
+
 void BinaryReader::SetEndianness(IO::Endianness endianness)
 {
 	mEndianness = endianness;
