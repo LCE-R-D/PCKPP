@@ -28,6 +28,11 @@ void PCKAssetFile::addProperty(const std::string& key, const std::string& value)
 	mProperties.push_back(std::pair<std::string, std::string>(key, value));
 }
 
+std::vector<std::pair<std::string, std::string>>& PCKAssetFile::getProperties()
+{
+	return mProperties;
+}
+
 const PCKAssetFile::Type IMAGE_ASSET_TYPES[]{ PCKAssetFile::Type::SKIN, PCKAssetFile::Type::CAPE, PCKAssetFile::Type::TEXTURE };
 
 bool PCKAssetFile::isImageType() const

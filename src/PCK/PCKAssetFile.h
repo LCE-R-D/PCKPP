@@ -78,6 +78,10 @@ public:
 	PCKAssetFile(const std::string& path, const std::vector<unsigned char>& data, Type assetType)
 		: mAssetType(assetType), mData(data), mPath(path) {}
 
+	PCKAssetFile(const std::string& path, Type assetType)
+		: mAssetType(assetType), mData({}), mPath(path) {
+	}
+
 	~PCKAssetFile() {
 		mData.clear();
 		mPath.clear();
@@ -106,6 +110,8 @@ public:
 
 	// Adds a property to the file
 	void addProperty(const std::string& key, const std::string& value);
+
+	std::vector<std::pair<std::string, std::string>>& getProperties();
 
 private:
 	Type mAssetType{ Type::SKIN };
