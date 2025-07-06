@@ -2,15 +2,69 @@
 #include <SDL3/SDL_log.h>
 #include <mutex>
 #include <condition_variable>
-#include <atomic>
+#include <vector>
+#include <filesystem>
 
 static std::mutex gMutex;
-static std::condition_variable gCV;
+static std::condition_variable gConditionVariable;
 static std::string gSelectedFile;
 static std::atomic<bool> gDialogFinished(false);
 
 // Because SDL needs this
-void FileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
+void SaveFileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
+{
+	if (!filelist || !*filelist) {
+		SDL_Log("Save dialog cancelled or invalid file parameters passed.");
+		return;
+	}
+
+	auto* data = static_cast<std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<std::pair<std::string, std::string>>>*>(userdata);
+
+	const char* extension = std::get<0>(*data);
+	std::vector<unsigned char>& fileData = std::get<1>(*data);
+	bool ignoreExtension = std::get<2>(*data);
+	std::vector<std::pair<std::string, std::string>>& properties = std::get<3>(*data);
+
+	std::filesystem::path filepath = *filelist;
+
+	// Automatically append extension if missing
+	if (!ignoreExtension && filepath.extension() != extension) {
+		filepath.replace_extension(extension);
+	}
+
+	SDL_Log("Save file path: %s", filepath.string().c_str());
+
+	std::ofstream ofile(filepath, std::ios::binary);
+	if (ofile.is_open()) {
+		ofile.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
+		ofile.close();
+
+		// Write associated properties if present
+		if (!properties.empty()) {
+			std::ofstream propertiesFile(filepath.string() + ".txt", std::ios::binary);
+			if (propertiesFile.is_open()) {
+				std::string propertyData;
+				for (const auto& [key, value] : properties) {
+					propertyData += key + ' ' + value + '\n';
+				}
+				std::vector<unsigned char> bytes{ propertyData.begin(), propertyData.end() };
+				propertiesFile.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+				propertiesFile.close();
+			}
+			else {
+				SDL_Log("Failed to open properties file for writing: %s.txt", filepath.string().c_str());
+			}
+		}
+	}
+	else {
+		SDL_Log("Failed to open file for writing: %s", filepath.string().c_str());
+	}
+
+	delete data;
+}
+
+// Because SDL needs this
+void OpenFileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
 {
 	{
 		std::lock_guard<std::mutex> lock(gMutex);
@@ -22,15 +76,15 @@ void FileDialogCallback(void* userdata, const char* const* filelist, int filterI
 		}
 	}
 	gDialogFinished = true;
-	gCV.notify_one();
+	gConditionVariable.notify_one();
 }
 
-std::string IO::OpenFile(SDL_Window* window, SDL_DialogFileFilter* filters)
+std::string IO::OpenFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters)
 {
 	gDialogFinished = false;
 	gSelectedFile.clear();
 
-	SDL_ShowOpenFileDialog(FileDialogCallback, nullptr, window, filters, sizeof(*filters)/sizeof(filters[0]), nullptr, false);
+	SDL_ShowOpenFileDialog(OpenFileDialogCallback, nullptr, window, filters, sizeof(*filters)/sizeof(filters[0]), nullptr, false);
 
 	SDL_Event event;
 	while (!gDialogFinished)
@@ -43,8 +97,23 @@ std::string IO::OpenFile(SDL_Window* window, SDL_DialogFileFilter* filters)
 		}
 
 		std::unique_lock<std::mutex> lock(gMutex);
-		gCV.wait_for(lock, std::chrono::milliseconds(10), [] { return gDialogFinished.load(); });
+		gConditionVariable.wait_for(lock, std::chrono::milliseconds(10), [] { return gDialogFinished.load(); });
 	}
 
 	return gSelectedFile;
+}
+
+void IO::SaveFileDialog(SDL_Window * window, SDL_DialogFileFilter * filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt, const std::vector<std::pair<std::string, std::string>>& properties)
+{
+	// this is a kinda silly way to do this
+	auto* data = new std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<std::pair<std::string, std::string>>>(filters->pattern, fileData, ignoreExt, properties);
+
+	SDL_ShowSaveFileDialog(
+		SaveFileDialogCallback,
+		data,     // user data!
+		window,
+		filters,
+		1,
+		defaultName.c_str()
+	);
 }
