@@ -1,4 +1,7 @@
 #include "UI.h"
+#include <iomanip>
+#include <sstream>
+#include <map>
 
 struct FileTreeNode {
 	std::string path{};
@@ -129,12 +132,7 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 		lastPreviewedFile = &file;
 		gPreviewTitle = file.getPath() + " (" + std::to_string(gPreviewTexture.width) + "x" + std::to_string(gPreviewTexture.height) + ")###Preview";
 
-		float previewSizeX = io->DisplaySize.x * 0.75f;
-		float previewSizeY = io->DisplaySize.y * 0.75f;
-		float padding = 16.0f;
-		float fitScale = std::min((previewSizeX - padding) / gPreviewTexture.width,
-			(previewSizeY - padding) / gPreviewTexture.height);
-		userZoom = fitScale;
+		userZoom = 1.0f;
 		zoomChanged = false;
 	}
 
@@ -152,14 +150,20 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 
 	if (ImGui::IsWindowHovered() && io->KeyCtrl && io->MouseWheel != 0.0f) {
 		float zoomDelta = io->MouseWheel * 0.1f;
-		userZoom = std::clamp(userZoom * (1.0f + zoomDelta), 0.05f, 10.0f);
+		userZoom = std::clamp(userZoom * (1.0f + zoomDelta), 0.5f, 100.0f); // this clamp is a little weird but it works lol
 		zoomChanged = true;
 	}
 
 	ImVec2 availSize = ImGui::GetContentRegionAvail();
-	ImVec2 imageSize = zoomChanged
-		? ImVec2(gPreviewTexture.width * userZoom, gPreviewTexture.height * userZoom)
-		: ImVec2(gPreviewTexture.width * userZoom, gPreviewTexture.height * userZoom);
+
+	if (!zoomChanged && userZoom == 1.0f) {
+		userZoom = std::min(
+			(availSize.x) / gPreviewTexture.width,
+			(availSize.y) / gPreviewTexture.height
+		);
+	}
+
+	ImVec2 imageSize = ImVec2(gPreviewTexture.width * userZoom, gPreviewTexture.height * userZoom);
 
 	ImVec2 cursorPos = ImGui::GetCursorPos();
 	if (imageSize.x < availSize.x) cursorPos.x += (availSize.x - imageSize.x) / 2.0f;
@@ -167,7 +171,9 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 	ImGui::SetCursorPos(cursorPos);
 	ImGui::Image((ImTextureID)(intptr_t)gPreviewTexture.id, imageSize);
 
-	std::string zoomText = "Zoom: " + std::to_string((int)(userZoom * 100.0f)) + "%";
+	std::stringstream ss;
+	ss << "Zoom: " << std::fixed << std::setprecision(1) << (userZoom) << "%";
+	std::string zoomText = ss.str();
 	ImVec2 textSize = ImGui::CalcTextSize(zoomText.c_str());
 	ImVec2 textPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x - textSize.x - 20, ImGui::GetWindowPos().y);
 	ImGui::SetCursorScreenPos(textPos);

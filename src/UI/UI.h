@@ -4,7 +4,6 @@
 #include "../Graphics/Graphics.h"
 #include "Menu/MenuFunctions.h"
 #include "../Math/Vec2Operators.h"
-#include <map>
 
 // Get the instance's current PCK File
 PCKFile*& GetCurrentPCKFile();
