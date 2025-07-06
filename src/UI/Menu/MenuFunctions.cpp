@@ -7,7 +7,7 @@ void OpenPCKFile(SDL_Window* window)
 		{ "Minecraft LCE DLC Files (*.pck)", "pck" }
 	};
 
-	std::string filePath = IO::OpenFile(window, filters);
+	std::string filePath = IO::OpenFileDialog(window, filters);
 
 	PCKFile*& currentPCKFile = GetCurrentPCKFile();
 
