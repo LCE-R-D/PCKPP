@@ -14,6 +14,11 @@ class BinaryReader
 {
 public:
 	BinaryReader(const std::string& filepath);
+	~BinaryReader()
+	{
+		if (mStream)
+			mStream.close();
+	}
 
 	void SetEndianness(IO::Endianness endianness);
 
@@ -27,8 +32,6 @@ public:
 	static uint32_t SwapInt32(uint32_t value);
 
 	void ReadData(void* buffer, size_t size);
-
-	void Close();
 
 private:
 	std::ifstream mStream;
