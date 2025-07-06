@@ -224,7 +224,10 @@ static void SaveNodeAsFile(const FileTreeNode& node, bool includeProperties = fa
 	filter.name = nameStr.c_str();
 	filter.pattern = patternStr.c_str();
 
-	IO::SaveFileDialog(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()), true, node.file->getProperties());
+	if(includeProperties)
+		IO::SaveFileDialog(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()), true, node.file->getProperties());
+	else
+		IO::SaveFileDialog(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()));
 }
 
 static void HandlePCKNodeContextMenu(const FileTreeNode& node)
@@ -236,38 +239,33 @@ static void HandlePCKNodeContextMenu(const FileTreeNode& node)
 				SaveNodeAsFile(node);
 			}
 
-			bool hasProperties = node.file->getProperties().size() > 0;
+			bool hasProperties = !node.file->getProperties().empty();
 
 			if (hasProperties && ImGui::MenuItem("Properties"))
 			{
-				const std::string& path = node.file->getPath();
-
-				std::string ext = path.substr(path.find_last_of('.') + 1);
-
-				// Use static so memory stays valid while the dialog is open
-				static std::string nameStr;
-				static std::string patternStr;
-
-				nameStr = "Text File | *." + ext + ".txt" + " File";
-				patternStr = ext + ".txt";
+				static std::string nameStr = "Text File | *.txt";
+				static std::string patternStr = "txt";
 
 				SDL_DialogFileFilter filter{};
 				filter.name = nameStr.c_str();
 				filter.pattern = patternStr.c_str();
 
-				std::string propertyData{};
-
-				for (auto& p : node.file->getProperties())
-				{
-					propertyData += p.first + ' ' + p.second + '\n';
+				std::string propertyData;
+				for (const auto& [key, val] : node.file->getProperties()) {
+					propertyData += key + ' ' + val + '\n';
 				}
 
-				IO::SaveFileDialog(GetWindow(), &filter, { propertyData.begin(), propertyData.end() }, GetFileNameFromPath(node.file->getPath()) + ".txt", true);
+				IO::SaveFileDialog(GetWindow(), &filter,
+					{ propertyData.begin(), propertyData.end() },
+					GetFileNameFromPath(node.file->getPath()) + ".txt",
+					true);
 			}
+
 			if (hasProperties && ImGui::MenuItem("File with Properties"))
 			{
 				SaveNodeAsFile(node, true);
 			}
+
 			ImGui::EndMenu();
 		}
 		ImGui::EndPopup();
