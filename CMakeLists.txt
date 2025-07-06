@@ -24,12 +24,11 @@ target_link_libraries(PCKPP PRIVATE glad)
 add_subdirectory(vendor/sdl)
 target_link_libraries(PCKPP PRIVATE SDL3::SDL3)
 
-add_library(imgui
+add_library(imgui STATIC
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui.cpp
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui_draw.cpp
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui_tables.cpp
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui_widgets.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/imgui_demo.cpp
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/backends/imgui_impl_sdl3.cpp
     ${CMAKE_CURRENT_LIST_DIR}/vendor/imgui/backends/imgui_impl_opengl2.cpp
 )
