@@ -39,9 +39,20 @@ ImGuiIO*& GetImGuiIO() { return io; }
 void HandleInput()
 {
 	// make sure to pass false or else it will trigger multiple times
-	if (io->KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O, false))
+	if (io->KeyCtrl)
 	{
-		OpenPCKFile(GetWindow());
+		if (ImGui::IsKeyPressed(ImGuiKey_O, false))
+		{
+			OpenPCKFile();
+		}
+		else if (gCurrentPCK && io->KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false))
+		{
+			SavePCKFile(gCurrentPCKFilePath, gPCKEndianness);
+		}
+		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false))
+		{
+			SavePCKFileAs(gPCKEndianness);
+		}
 	}
 }
 
@@ -50,10 +61,13 @@ void HandleMenuBar() {
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
-				OpenPCKFile(GetWindow());
+				OpenPCKFile();
 			}
-			if (gCurrentPCK && ImGui::MenuItem("Save", "Ctrl+S")) {
-				// Save code here
+			if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gCurrentPCK)) {
+				SavePCKFile(gCurrentPCKFilePath, gPCKEndianness);
+			}
+			if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gCurrentPCK)) {
+				SavePCKFileAs(gPCKEndianness);
 			}
 			ImGui::EndMenu();
 		}
