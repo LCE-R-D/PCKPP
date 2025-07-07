@@ -1,5 +1,7 @@
 #include "PCKFile.h"
 #include "../IO/BinaryReader.h"
+#include "../IO/BinaryWriter.h"
+#include <set>
 
 const char* XML_VERSION_STRING{"XMLVERSION"}; // used for advanced/full box support for skins
 
@@ -51,12 +53,12 @@ void PCKFile::Read(const std::string& inpath)
 		reader.ReadInt32(); // skip 4 bytes
 	}
 
-	bool found = std::any_of(mProperties.begin(), mProperties.end(),
+	mXMLSupport = std::any_of(mProperties.begin(), mProperties.end(),
 		[](const std::string& property) { return property == XML_VERSION_STRING; });
 
-	if (found) {
-		mXMLVersion = reader.ReadInt32();
-		SDL_Log("XML Version: %u", mXMLVersion);
+	if (mXMLSupport) {
+		reader.ReadInt32(); // just "skip" 4 bytes
+		SDL_Log("XML Version: %u", mXMLSupport);
 	}
 
 	uint32_t fileCount = reader.ReadInt32();
@@ -108,6 +110,88 @@ void PCKFile::Read(const std::string& inpath)
 	}
 }
 
+std::u16string ToWideString(const std::string& utf8)
+{
+	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+	return convert.from_bytes(utf8);
+}
+
+void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
+{
+	BinaryWriter writer(outpath);
+	writer.SetEndianness(endianness);
+
+	uint32_t versionOut = mVersion;
+	if (endianness != IO::Endianness::LITTLE)
+		versionOut = BinaryWriter::SwapInt32(mVersion);
+	writer.WriteData(&versionOut, sizeof(uint32_t));
+
+	// make new property list
+	mProperties.clear();
+	std::set<std::string> propertySet;
+
+	if (mXMLSupport)
+		mProperties.push_back(XML_VERSION_STRING);
+
+	for (const auto& file : mFiles)
+	{
+		for (const auto& [key, _] : file.getProperties())
+		{
+			if (propertySet.insert(key).second) // only insert if not already in set
+				mProperties.push_back(key);
+		}
+	}
+
+	uint32_t propertyCount = static_cast<uint32_t>(mProperties.size());
+	writer.WriteInt32(propertyCount);
+
+	for (uint32_t i = 0; i < propertyCount; ++i)
+	{
+		writer.WriteInt32(i);
+		writer.WriteInt32(static_cast<uint32_t>(mProperties[i].size()));
+		writer.WriteWideString(ToWideString(mProperties[i]));
+		writer.WriteInt32(0); // skip 4 bytes
+	}
+
+	if (mXMLSupport)
+	{
+		writer.WriteInt32(mXMLSupport);
+	}
+
+	uint32_t fileCount = static_cast<uint32_t>(mFiles.size());
+	writer.WriteInt32(fileCount);
+
+	for (const auto& file : mFiles)
+	{
+		writer.WriteInt32(static_cast<uint32_t>(file.getFileSize()));
+		writer.WriteInt32(static_cast<uint32_t>(file.getAssetType()));
+
+		const std::string& filePath = file.getPath();
+		writer.WriteInt32(static_cast<uint32_t>(filePath.size()));
+		writer.WriteWideString(ToWideString(filePath));
+		writer.WriteInt32(0); // skip 4 bytes
+	}
+
+	for (const auto& file : mFiles)
+	{
+		const auto& props = file.getProperties();
+		writer.WriteInt32(static_cast<uint32_t>(props.size()));
+
+		for (const auto& [key, value] : props)
+		{
+			// key must be in global mProperties
+			auto it = std::find(mProperties.begin(), mProperties.end(), key);
+			uint32_t index = static_cast<uint32_t>(std::distance(mProperties.begin(), it));
+			writer.WriteInt32(index);
+			writer.WriteInt32(static_cast<uint32_t>(value.size()));
+			writer.WriteWideString(ToWideString(value));
+			writer.WriteInt32(0); // skip 4 bytes
+		}
+
+		writer.WriteData(file.getData().data(), file.getFileSize());
+	}
+}
+
 uint32_t PCKFile::getPCKVersion()
 {
 	return mVersion;
@@ -126,6 +210,16 @@ const std::vector<std::string>& PCKFile::getPropertyKeys() const
 const std::vector<PCKAssetFile>& PCKFile::getFiles() const
 {
 	return mFiles;
+}
+
+bool PCKFile::getXMLSupport()
+{
+	return mXMLSupport;
+}
+
+void PCKFile::setXMLSupport(bool value)
+{
+	mXMLSupport = value;
 }
 
 PCKFile::~PCKFile()

@@ -16,6 +16,9 @@ public:
 	// Reads data into the PCK File from string; will add memory variant soon
 	void Read(const std::string& inpath);
 
+	// Writes PCK File to a specifed location
+	void Write(const std::string& outpath, IO::Endianness endianness);
+
 	// Reads PCK Format/Version and sets Endianness
 	uint32_t getPCKVersion();
 
@@ -28,9 +31,13 @@ public:
 	// Gets Files from the PCK File
 	const std::vector<PCKAssetFile>& getFiles() const;
 
+	bool getXMLSupport();
+
+	void setXMLSupport(bool value);
+
 private:
 	IO::Endianness mEndianess{ IO::Endianness::LITTLE };
-	uint32_t mXMLVersion{};
+	bool mXMLSupport{false};
 	uint32_t mVersion{};
 	std::vector<std::string> mProperties{};
 	std::vector<PCKAssetFile> mFiles{};
