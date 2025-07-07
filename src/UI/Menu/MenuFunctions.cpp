@@ -1,13 +1,13 @@
 #include "MenuFunctions.h"
 #include "../UI.h"
 
-void OpenPCKFile(SDL_Window* window)
-{
-	SDL_DialogFileFilter filters[] = {
-		{ "Minecraft LCE DLC Files (*.pck)", "pck" }
-	};
+SDL_DialogFileFilter pckFilter[] = {
+	{ "Minecraft LCE DLC Files (*.pck)", "pck" }
+};
 
-	std::string filePath = IO::OpenFileDialog(window, filters);
+void OpenPCKFile()
+{
+	std::string filePath = IO::OpenFileDialog(GetWindow(), pckFilter);
 
 	PCKFile*& currentPCKFile = GetCurrentPCKFile();
 
@@ -19,15 +19,39 @@ void OpenPCKFile(SDL_Window* window)
 			currentPCKFile->Read(filePath);
 		}
 		catch (const std::exception& e) {
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", e.what(), window);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", e.what(), GetWindow());
 			delete currentPCKFile;
 			currentPCKFile = new PCKFile();
+			return;
 		}
 	}
 	else {
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "User aborted operation.", window);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "User aborted operation.", GetWindow());
+		return;
 	}
 
-	// if successful, reset node and UI data
-	ResetUIData();
+	// if successful, reset node and UI data; pass file path to send to UI
+	ResetUIData(filePath);
+}
+
+void SavePCKFileAs(IO::Endianness endianness)
+{
+	std::string filePath = IO::OpenFileDialog(GetWindow(), pckFilter);
+
+	if(!filePath.empty())
+		SavePCKFile(filePath, endianness);
+}
+
+void SavePCKFile(const std::string& outpath, IO::Endianness endianness)
+{
+	PCKFile*& currentPCKFile = GetCurrentPCKFile();
+
+	try {
+		currentPCKFile->Write(outpath, endianness);
+	}
+	catch (const std::exception& e) {
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", e.what(), GetWindow());
+		delete currentPCKFile;
+		currentPCKFile = new PCKFile();
+	}
 }
