@@ -1,8 +1,8 @@
 #include "IO.h"
 #include <SDL3/SDL_log.h>
-#include <mutex>
 #include <condition_variable>
 #include <vector>
+#include <codecvt>
 #include <filesystem>
 
 static std::mutex gMutex;
@@ -10,8 +10,18 @@ static std::condition_variable gConditionVariable;
 static std::string gSelectedFile;
 static std::atomic<bool> gDialogFinished(false);
 
+std::string IO::ToUTF8(const std::u16string& str) {
+	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+	return convert.to_bytes(str);
+}
+
+std::u16string IO::ToUTF16(const std::string& str) {
+	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+	return convert.from_bytes(str);
+}
+
 // Because SDL needs this
-void SaveFileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
+static void SaveFileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
 {
 	std::lock_guard<std::mutex> lock(gMutex);
 
@@ -69,7 +79,7 @@ void SaveFileDialogCallback(void* userdata, const char* const* filelist, int fil
 }
 
 // Because SDL needs this
-void OpenFileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
+static void OpenFileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
 {
 	std::lock_guard<std::mutex> lock(gMutex);
 	if (filelist && *filelist) {

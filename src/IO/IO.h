@@ -15,6 +15,12 @@ namespace IO
 		ENDIANESS_TOTAL
 	};
 
+	// For converting std::u16string to std::string (UTF-8)
+	std::string ToUTF8(const std::u16string& str);
+
+	// For converting std::string to std::u16string
+	std::u16string ToUTF16(const std::string& str);
+
 	// For opening files with SDL's file system
 	std::string OpenFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters);
 
