@@ -22,12 +22,16 @@ std::string gPreviewTitle = "Preview";
 
 // Instance globals
 PCKFile* gCurrentPCK{ nullptr };
-std::string gSelectedPath;
-bool gKeyboardScrolled{ false };
+static std::string gCurrentPCKFilePath;
+static std::string gCurrentPCKFileName;
+static std::string gSelectedPath;
+static bool gKeyboardScrolled{ false };
 ImGuiIO* io{ nullptr };
 float gMainMenuBarHeight{ 24.0f };
-static bool gShouldOpenFolder = false;
-static bool gShouldCloseFolder = false;
+static bool gShouldOpenFolder{ false };
+static bool gShouldCloseFolder{false};
+static bool gHasXMLSupport{ false };
+static IO::Endianness gPCKEndianness{ IO::Endianness::LITTLE };
 
 PCKFile*& GetCurrentPCKFile() { return gCurrentPCK; }
 ImGuiIO*& GetImGuiIO() { return io; }
@@ -408,9 +412,17 @@ void UISetup() {
 	io->Fonts->AddFontFromFileTTF("assets/fonts/m6x11plus.ttf", 18.0f);
 }
 
-void ResetUIData() {
+void ResetUIData(const std::string& filePath) {
+
+	if (gCurrentPCK)
+	{
+		gHasXMLSupport = gCurrentPCK->getXMLSupport();
+		gPCKEndianness = gCurrentPCK->getEndianness();
+	}
 
 	gSelectedPath = "";
+	gCurrentPCKFilePath = filePath.empty() ? "" : filePath;
+	gCurrentPCKFileName = filePath.empty() ? "" : std::filesystem::path(filePath).filename().string();
 	gKeyboardScrolled = false;
 	gShouldOpenFolder = false;
 	gShouldCloseFolder = false;

@@ -23,8 +23,8 @@ void HandleMenuBar();
 // Render and Maintain File Tree
 void HandleFileTree();
 
-// Reset PCK++ UI Data
-void ResetUIData();
+// Reset PCK++ UI Data; optional filepath passing for when opening the file
+void ResetUIData(const std::string& filePath = "");
 
 // Setup UI related Vendors
 void UISetup();
