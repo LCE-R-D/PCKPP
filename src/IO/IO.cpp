@@ -116,13 +116,13 @@ std::string IO::OpenFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters
 	return gSelectedFile;
 }
 
-std::string IO::SaveFileDialog(SDL_Window * window, SDL_DialogFileFilter * filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt, const std::vector<std::pair<std::string, std::string>>& properties)
+std::string IO::SaveFileDialog(SDL_Window * window, SDL_DialogFileFilter * filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt, const std::vector<std::pair<std::string, std::u16string>>& properties)
 {
 	gDialogFinished = false;
 	gSelectedFile.clear();
 
 	// this is a kinda silly way to do this
-	auto* data = new std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<std::pair<std::string, std::string>>>(filters->pattern, fileData, ignoreExt, properties);
+	auto* data = new std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<std::pair<std::string, std::u16string>>>(filters->pattern, fileData, ignoreExt, properties);
 
 	SDL_ShowSaveFileDialog(SaveFileDialogCallback, data, window, filters, 1, defaultName.c_str());
 

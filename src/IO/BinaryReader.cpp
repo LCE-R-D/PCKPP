@@ -38,7 +38,7 @@ uint32_t BinaryReader::ReadInt32()
 	return value;
 }
 
-std::string BinaryReader::ReadWideString(size_t length)
+std::u16string BinaryReader::ReadU16String(size_t length)
 {
 	std::u16string utf16str;
 	utf16str.resize(length);
@@ -46,24 +46,18 @@ std::string BinaryReader::ReadWideString(size_t length)
 	for (size_t i = 0; i < length; ++i)
 	{
 		uint16_t ch;
+		uint8_t bytes[2];
+		ReadData(bytes, 2);
+
 		if (mEndianness == IO::Endianness::BIG)
-		{
-			uint8_t bytes[2];
-			ReadData(bytes, 2);
 			ch = (bytes[0] << 8) | bytes[1];
-		}
 		else
-		{
-			uint8_t bytes[2];
-			ReadData(bytes, 2);
 			ch = (bytes[1] << 8) | bytes[0];
-		}
+
 		utf16str[i] = ch;
 	}
 
-	// Convert UTF-16 to UTF-8
-	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
-	return converter.to_bytes(utf16str);
+	return utf16str;
 }
 
 void BinaryReader::ReadData(void* buffer, size_t size)

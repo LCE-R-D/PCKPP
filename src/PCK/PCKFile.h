@@ -31,7 +31,7 @@ public:
 	// Gets Files from the PCK File
 	const std::vector<PCKAssetFile>& getFiles() const;
 
-	bool getXMLSupport();
+	bool getXMLSupport() const;
 
 	void setXMLSupport(bool value);
 

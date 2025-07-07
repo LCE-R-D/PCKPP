@@ -26,7 +26,7 @@ public:
 	uint16_t ReadInt16();
 	uint32_t ReadInt32();
 
-	std::string ReadWideString(size_t length);
+	std::u16string ReadU16String(size_t length);
 
 	static uint16_t SwapInt16(uint16_t value);
 	static uint32_t SwapInt32(uint32_t value);

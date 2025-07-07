@@ -26,7 +26,7 @@ public:
 	void WriteInt16(const uint16_t value);
 	void WriteInt32(const uint32_t value);
 
-	void WriteWideString(const std::u16string& utf16str);
+	void WriteU16String(const std::u16string& utf16str);
 
 	static uint16_t SwapInt16(const uint16_t value);
 	static uint32_t SwapInt32(const uint32_t value);

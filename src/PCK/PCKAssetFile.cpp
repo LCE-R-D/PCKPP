@@ -24,11 +24,11 @@ PCKAssetFile::Type PCKAssetFile::getAssetType() const {
 	return mAssetType;
 }
 
-void PCKAssetFile::addProperty(const std::string& key, const std::string& value) {
-	mProperties.push_back(std::pair<std::string, std::string>(key, value));
+void PCKAssetFile::addProperty(const std::string& key, const std::u16string& value) {
+	mProperties.push_back(std::pair<std::string, std::u16string>(key, value));
 }
 
-const std::vector<std::pair<std::string, std::string>>& PCKAssetFile::getProperties() const
+const std::vector<std::pair<std::string, std::u16string>>& PCKAssetFile::getProperties() const
 {
 	return mProperties;
 }

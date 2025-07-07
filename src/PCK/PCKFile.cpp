@@ -3,7 +3,7 @@
 #include "../IO/BinaryWriter.h"
 #include <set>
 
-const char* XML_VERSION_STRING{"XMLVERSION"}; // used for advanced/full box support for skins
+const char* XML_VERSION_STRING{ "XMLVERSION" }; // used for advanced/full box support for skins
 
 void PCKFile::Read(const std::string& inpath)
 {
@@ -39,12 +39,12 @@ void PCKFile::Read(const std::string& inpath)
 	mProperties.clear();
 	mProperties.reserve(propertyCount);
 
-	for (uint32_t i{0}; i < propertyCount; i++)
+	for (uint32_t i{ 0 }; i < propertyCount; i++)
 	{
 		uint32_t propertyIndex = reader.ReadInt32();
 		uint32_t stringLength = reader.ReadInt32();
 
-		std::string property = reader.ReadWideString(stringLength);
+		std::string property = IO::ToUTF8(reader.ReadWideString(stringLength));
 
 		SDL_Log("\tIndex: %u, Property: %s", propertyIndex, property.c_str());
 
@@ -72,7 +72,7 @@ void PCKFile::Read(const std::string& inpath)
 		uint32_t fileType = reader.ReadInt32();
 		uint32_t filePathLength = reader.ReadInt32();
 
-		std::string filePath = reader.ReadWideString(filePathLength);
+		std::string filePath = IO::ToUTF8(reader.ReadWideString(filePathLength));
 		std::replace(filePath.begin(), filePath.end(), '\\', '/');
 
 		reader.ReadInt32(); // skip 4 bytes
@@ -83,7 +83,7 @@ void PCKFile::Read(const std::string& inpath)
 
 	SDL_Log("Files: %u", fileCount);
 
-	for (int i{0}; i < mFiles.size(); ++i)
+	for (int i{ 0 }; i < mFiles.size(); ++i)
 	{
 		PCKAssetFile& file = mFiles[i];
 		uint32_t propertyCount = reader.ReadInt32();
@@ -93,9 +93,14 @@ void PCKFile::Read(const std::string& inpath)
 		for (int j{ 0 }; j < propertyCount; j++)
 		{
 			uint32_t propertyIndex = reader.ReadInt32();
+
+			if (propertyIndex >= mProperties.size()) {
+				throw std::runtime_error("Property index out of range");
+			}
+
 			std::string propertyKey = mProperties[propertyIndex];
 			uint32_t propertyValueLength = reader.ReadInt32();
-			std::string propertyValue = reader.ReadWideString(propertyValueLength);
+			std::u16string propertyValue = reader.ReadWideString(propertyValueLength);
 
 			reader.ReadInt32(); // skip 4 bytes
 
@@ -108,12 +113,6 @@ void PCKFile::Read(const std::string& inpath)
 		reader.ReadData(fileData.data(), fileData.size());
 		file.setData(std::move(fileData));
 	}
-}
-
-std::u16string ToWideString(const std::string& utf8)
-{
-	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-	return convert.from_bytes(utf8);
 }
 
 void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
@@ -149,7 +148,7 @@ void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
 	{
 		writer.WriteInt32(i);
 		writer.WriteInt32(static_cast<uint32_t>(mProperties[i].size()));
-		writer.WriteWideString(ToWideString(mProperties[i]));
+		writer.WriteU16String(IO::ToUTF16(mProperties[i]));
 		writer.WriteInt32(0); // skip 4 bytes
 	}
 
@@ -168,7 +167,7 @@ void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
 
 		const std::string& filePath = file.getPath();
 		writer.WriteInt32(static_cast<uint32_t>(filePath.size()));
-		writer.WriteWideString(ToWideString(filePath));
+		writer.WriteU16String(IO::ToUTF16(filePath));
 		writer.WriteInt32(0); // skip 4 bytes
 	}
 
@@ -184,7 +183,7 @@ void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
 			uint32_t index = static_cast<uint32_t>(std::distance(mProperties.begin(), it));
 			writer.WriteInt32(index);
 			writer.WriteInt32(static_cast<uint32_t>(value.size()));
-			writer.WriteWideString(ToWideString(value));
+			writer.WriteU16String(value);
 			writer.WriteInt32(0); // skip 4 bytes
 		}
 

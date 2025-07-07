@@ -76,10 +76,11 @@ public:
 	}
 
 	PCKAssetFile(const std::string& path, const std::vector<unsigned char>& data, Type assetType)
-		: mAssetType(assetType), mData(data), mPath(path) {}
+		: mAssetType(assetType), mData(data), mPath(path) {
+	}
 
 	PCKAssetFile(const std::string& path, Type assetType)
-		: mAssetType(assetType), mData({}), mPath(path) {
+		: PCKAssetFile(path, {}, assetType) {
 	}
 
 	~PCKAssetFile() {
@@ -109,13 +110,13 @@ public:
 	bool isImageType() const;
 
 	// Adds a property to the file
-	void addProperty(const std::string& key, const std::string& value);
+	void addProperty(const std::string& key, const std::u16string& value);
 
-	const std::vector<std::pair<std::string, std::string>>& getProperties() const;
+	const std::vector<std::pair<std::string, std::u16string>>& getProperties() const;
 
 private:
 	Type mAssetType{ Type::SKIN };
 	std::vector<unsigned char> mData;
 	std::string mPath;
-	std::vector<std::pair<std::string, std::string>> mProperties;
+	std::vector<std::pair<std::string, std::u16string>> mProperties;
 };

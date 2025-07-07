@@ -32,11 +32,11 @@ void BinaryWriter::WriteInt32(uint32_t value)
 	WriteData(&value, sizeof(value));
 }
 
-void BinaryWriter::WriteWideString(const std::u16string& utf16str)
+void BinaryWriter::WriteU16String(const std::u16string& utf16str)
 {
 	for (char16_t ch : utf16str)
 	{
-		uint8_t bytes[2];
+		uint8_t bytes[2]{};
 		if (mEndianness == IO::Endianness::BIG)
 		{
 			bytes[0] = static_cast<uint8_t>((ch >> 8) & 0xFF);

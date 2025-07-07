@@ -170,7 +170,6 @@ static void BuildFileTree() {
 
 // Renders and handles window to preview the currently selected file if any data is previewable
 static void HandlePreviewWindow(const PCKAssetFile& file) {
-	static const PCKAssetFile* lastPreviewedFile = nullptr;
 	static bool zoomChanged = false;
 	static float userZoom = 1.0f;
 
@@ -305,9 +304,10 @@ static void HandlePCKNodeContextMenu(const FileTreeNode& node)
 				filter.name = nameStr.c_str();
 				filter.pattern = patternStr.c_str();
 
-				std::string propertyData;
+				std::u16string propertyData;
 				for (const auto& [key, val] : node.file->getProperties()) {
-					propertyData += key + ' ' + val + '\n';
+					// ensure all this is u16
+					propertyData += IO::ToUTF16(key) + u' ' + val + u'\n';
 				}
 
 				IO::SaveFileDialog(GetWindow(), &filter,
