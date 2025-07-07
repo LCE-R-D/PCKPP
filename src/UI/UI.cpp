@@ -347,7 +347,7 @@ static void RenderFileTree() {
 	gVisibleNodes.clear();
 	ImGui::SetNextWindowPos(ImVec2(0, gMainMenuBarHeight));
 	ImGui::SetNextWindowSize(ImVec2(io->DisplaySize.x * 0.25f, io->DisplaySize.y - gMainMenuBarHeight));
-	ImGui::Begin("File Tree", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+	ImGui::Begin(std::string(gCurrentPCKFileName + "###FileTree").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
 	gShouldOpenFolder = false;
 	gShouldCloseFolder = false;
