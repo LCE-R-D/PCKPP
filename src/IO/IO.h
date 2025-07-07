@@ -19,5 +19,5 @@ namespace IO
 	std::string OpenFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters);
 
 	// For saving files with SDL's file system
-	void SaveFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt = false, const std::vector<std::pair<std::string, std::string>>& properties = {});
+	std::string SaveFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt = false, const std::vector<std::pair<std::string, std::string>>& properties = {});
 }
