@@ -24,6 +24,12 @@ void OpenPCKFile()
 			currentPCKFile = new PCKFile();
 			return;
 		}
+		catch (...) {
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Unknown Error Occured.", GetWindow());
+			delete currentPCKFile;
+			currentPCKFile = new PCKFile();
+			return;
+		}
 	}
 	else {
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "User aborted operation.", GetWindow());
@@ -54,4 +60,6 @@ void SavePCKFile(const std::string& outpath, IO::Endianness endianness)
 		delete currentPCKFile;
 		currentPCKFile = new PCKFile();
 	}
+
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Saved", "File successfully saved!", GetWindow());
 }
