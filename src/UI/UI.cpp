@@ -57,6 +57,31 @@ void HandleMenuBar() {
 			}
 			ImGui::EndMenu();
 		}
+
+		if (gCurrentPCK)
+		{
+			if (ImGui::BeginMenu("PCK"))
+			{
+				ImGui::Text("PCK Format:");
+				if (ImGui::RadioButton("Little Endian (Xbox One, PS4, PSVita, Nintendo Switch)", gPCKEndianness == IO::Endianness::LITTLE))
+				{
+					gPCKEndianness = IO::Endianness::LITTLE;
+				}
+
+				if (ImGui::RadioButton("Big Endian (Xbox 360, PS3, Wii U)", gPCKEndianness == IO::Endianness::BIG))
+				{
+					gPCKEndianness = IO::Endianness::BIG;
+				}
+
+				ImGui::NewLine();
+				if (ImGui::Checkbox("Full BOX Support (for Skins)", &gHasXMLSupport)) {
+					gCurrentPCK->setXMLSupport(gHasXMLSupport);
+				}
+
+				ImGui::EndMenu();
+			}
+		}
+
 		gMainMenuBarHeight = ImGui::GetFrameHeight();
 		ImGui::EndMainMenuBar();
 	}
