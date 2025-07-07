@@ -1,4 +1,4 @@
-#include "UI.h"
+﻿#include "UI.h"
 #include <iomanip>
 #include <sstream>
 #include <filesystem>
@@ -448,7 +448,26 @@ void UISetup() {
 		gFileIcons[type] = LoadTextureFromFile(path, GL_LINEAR_MIPMAP_LINEAR);
 	}
 	io = &ImGui::GetIO();
-	io->Fonts->AddFontFromFileTTF("assets/fonts/m6x11plus.ttf", 18.0f);
+	io->FontAllowUserScaling = true;
+
+	ImFontConfig config;
+	config.MergeMode = false;
+	config.PixelSnapH = true;
+
+	io->Fonts->AddFontFromFileTTF("assets/fonts/m6x11plus.ttf", 18.0f, &config);
+
+	config.MergeMode = true;
+
+	// Merge Chinese (Simplified)
+	io->Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, io->Fonts->GetGlyphRangesChineseSimplifiedCommon());
+	// Merge Chinese (Traditional)
+	io->Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, io->Fonts->GetGlyphRangesChineseFull());
+	// Merge Japanese
+	io->Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, io->Fonts->GetGlyphRangesJapanese());
+	// Merge Korean
+	io->Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, io->Fonts->GetGlyphRangesKorean());
+
+	io->Fonts->Build();
 }
 
 void ResetUIData(const std::string& filePath) {
