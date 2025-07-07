@@ -168,6 +168,44 @@ static void BuildFileTree() {
 	gTreeNodes = std::move(root.children);
 }
 
+static void HandlePropertiesWindow(const PCKAssetFile& file)
+{
+	if (lastPreviewedFile != &file) {
+		lastPreviewedFile = &file;
+	}
+
+	const auto& properties = file.getProperties();
+
+	float propertyWindowPosX = io->DisplaySize.x * 0.25f;
+	float propertyWindowHeight = (io->DisplaySize.y * 0.35f) - gMainMenuBarHeight;
+	ImVec2 propertyWindowSize(io->DisplaySize.x * 0.75f, propertyWindowHeight);
+	ImGui::SetNextWindowSize(propertyWindowSize, ImGuiCond_Always);
+	ImGui::SetNextWindowPos(ImVec2(propertyWindowPosX, io->DisplaySize.y - propertyWindowHeight), ImGuiCond_Always);
+
+	ImGui::Begin("Properties", nullptr,
+		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
+		ImGuiWindowFlags_HorizontalScrollbar);
+
+	if (properties.empty()) {
+		ImGui::Text("NO PROPERTIES");
+	}
+	else {
+		int propertyIndex = 0;
+
+		for (const auto& [key, value] : properties) {
+			std::string& propertyName = key + "###Properties" + std::to_string(propertyIndex);
+			if(ImGui::Selectable(propertyName.c_str(), propertyIndex == gSelectedPropertyIndex))
+			{
+				gSelectedPropertyIndex = propertyIndex;
+			}
+			propertyIndex++;
+		}
+	}
+
+	ImGui::End();
+}
+
 // Renders and handles window to preview the currently selected file if any data is previewable
 static void HandlePreviewWindow(const PCKAssetFile& file) {
 	static bool zoomChanged = false;
@@ -433,6 +471,8 @@ static void RenderFileTree() {
 		{
 			HandlePreviewWindow(*selectedFile);
 		}
+
+		HandlePropertiesWindow(*selectedFile);
 	}
 
 	gShouldOpenFolder = false;
