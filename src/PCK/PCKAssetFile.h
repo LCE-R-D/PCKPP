@@ -111,7 +111,7 @@ public:
 	// Adds a property to the file
 	void addProperty(const std::string& key, const std::string& value);
 
-	std::vector<std::pair<std::string, std::string>>& getProperties();
+	const std::vector<std::pair<std::string, std::string>>& getProperties() const;
 
 private:
 	Type mAssetType{ Type::SKIN };

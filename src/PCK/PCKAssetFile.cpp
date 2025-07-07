@@ -28,7 +28,7 @@ void PCKAssetFile::addProperty(const std::string& key, const std::string& value)
 	mProperties.push_back(std::pair<std::string, std::string>(key, value));
 }
 
-std::vector<std::pair<std::string, std::string>>& PCKAssetFile::getProperties()
+const std::vector<std::pair<std::string, std::string>>& PCKAssetFile::getProperties() const
 {
 	return mProperties;
 }
