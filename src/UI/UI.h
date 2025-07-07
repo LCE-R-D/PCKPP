@@ -11,9 +11,6 @@ PCKFile*& GetCurrentPCKFile();
 // Get the instance's current ImGui IO stuff
 ImGuiIO*& GetImGuiIO();
 
-// Gets current file path for the key strokes
-const std::string& GetCurrentFilePath();
-
 // Handle input for the UI, like keystrokes
 void HandleInput();
 
