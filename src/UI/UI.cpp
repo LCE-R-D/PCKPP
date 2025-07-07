@@ -19,6 +19,7 @@ Texture gFolderIcon;
 // Preview globals
 Texture gPreviewTexture{};
 std::string gPreviewTitle = "Preview";
+static const PCKAssetFile* lastPreviewedFile = nullptr;
 
 // Instance globals
 PCKFile* gCurrentPCK{ nullptr };
@@ -32,6 +33,7 @@ static bool gShouldOpenFolder{ false };
 static bool gShouldCloseFolder{false};
 static bool gHasXMLSupport{ false };
 static IO::Endianness gPCKEndianness{ IO::Endianness::LITTLE };
+static int gSelectedPropertyIndex = -1;
 
 PCKFile*& GetCurrentPCKFile() { return gCurrentPCK; }
 ImGuiIO*& GetImGuiIO() { return io; }
@@ -192,9 +194,9 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 	if (gPreviewTexture.id == 0) return;
 
 	float previewPosX = io->DisplaySize.x * 0.25f;
-	ImVec2 windowSize(io->DisplaySize.x * 0.75f, io->DisplaySize.y - (io->DisplaySize.y * 0.25f));
+	ImVec2 previewWindowSize(io->DisplaySize.x * 0.75f, io->DisplaySize.y - (io->DisplaySize.y * 0.35f));
 	ImGui::SetNextWindowPos(ImVec2(previewPosX, gMainMenuBarHeight), ImGuiCond_Always);
-	ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+	ImGui::SetNextWindowSize(previewWindowSize, ImGuiCond_Always);
 
 	ImGui::Begin(gPreviewTitle.c_str(), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
@@ -425,7 +427,13 @@ static void RenderFileTree() {
 		selectedFile = FindSelectedFile(node);
 		if (selectedFile) break;
 	}
-	if (selectedFile && selectedFile->isImageType()) HandlePreviewWindow(*selectedFile);
+	if (selectedFile)
+	{
+		if (selectedFile->isImageType())
+		{
+			HandlePreviewWindow(*selectedFile);
+		}
+	}
 
 	gShouldOpenFolder = false;
 	gShouldCloseFolder = false;
@@ -478,6 +486,7 @@ void ResetUIData(const std::string& filePath) {
 		gPCKEndianness = gCurrentPCK->getEndianness();
 	}
 
+	gSelectedPropertyIndex = -1;
 	gSelectedPath = "";
 	gCurrentPCKFilePath = filePath.empty() ? "" : filePath;
 	gCurrentPCKFileName = filePath.empty() ? "" : std::filesystem::path(filePath).filename().string();
