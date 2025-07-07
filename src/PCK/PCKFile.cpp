@@ -44,7 +44,7 @@ void PCKFile::Read(const std::string& inpath)
 		uint32_t propertyIndex = reader.ReadInt32();
 		uint32_t stringLength = reader.ReadInt32();
 
-		std::string property = IO::ToUTF8(reader.ReadWideString(stringLength));
+		std::string property = IO::ToUTF8(reader.ReadU16String(stringLength));
 
 		SDL_Log("\tIndex: %u, Property: %s", propertyIndex, property.c_str());
 
@@ -72,7 +72,7 @@ void PCKFile::Read(const std::string& inpath)
 		uint32_t fileType = reader.ReadInt32();
 		uint32_t filePathLength = reader.ReadInt32();
 
-		std::string filePath = IO::ToUTF8(reader.ReadWideString(filePathLength));
+		std::string filePath = IO::ToUTF8(reader.ReadU16String(filePathLength));
 		std::replace(filePath.begin(), filePath.end(), '\\', '/');
 
 		reader.ReadInt32(); // skip 4 bytes
@@ -100,11 +100,11 @@ void PCKFile::Read(const std::string& inpath)
 
 			std::string propertyKey = mProperties[propertyIndex];
 			uint32_t propertyValueLength = reader.ReadInt32();
-			std::u16string propertyValue = reader.ReadWideString(propertyValueLength);
+			std::u16string propertyValue = reader.ReadU16String(propertyValueLength);
 
 			reader.ReadInt32(); // skip 4 bytes
 
-			SDL_Log("\t\tProperty: %s %s", propertyKey.c_str(), propertyValue.c_str());
+			SDL_Log("\t\tProperty: %s %s", propertyKey.c_str(), IO::ToUTF8(propertyValue).c_str());
 
 			file.addProperty(propertyKey, propertyValue);
 		}
