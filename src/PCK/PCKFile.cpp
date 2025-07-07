@@ -192,12 +192,12 @@ void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
 	}
 }
 
-uint32_t PCKFile::getPCKVersion()
+uint32_t PCKFile::getPCKVersion() const
 {
 	return mVersion;
 }
 
-IO::Endianness PCKFile::getEndianness()
+IO::Endianness PCKFile::getEndianness() const
 {
 	return mEndianess;
 }
@@ -212,7 +212,7 @@ const std::vector<PCKAssetFile>& PCKFile::getFiles() const
 	return mFiles;
 }
 
-bool PCKFile::getXMLSupport()
+bool PCKFile::getXMLSupport() const
 {
 	return mXMLSupport;
 }

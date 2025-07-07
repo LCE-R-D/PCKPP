@@ -20,10 +20,10 @@ public:
 	void Write(const std::string& outpath, IO::Endianness endianness);
 
 	// Reads PCK Format/Version and sets Endianness
-	uint32_t getPCKVersion();
+	uint32_t getPCKVersion() const;
 
 	// Gets PCK File Endianness; Little Endian: Xbox One, PS4, PSVita, Nintendo Switch; Big Endian: Xbox 360, PS3, Wii U
-	IO::Endianness getEndianness();
+	IO::Endianness getEndianness() const;
 
 	// Gets Registered Property Keys from the PCK File
 	const std::vector<std::string>& getPropertyKeys() const;
