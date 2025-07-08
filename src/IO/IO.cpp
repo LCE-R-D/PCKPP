@@ -31,12 +31,12 @@ static void SaveFileDialogCallback(void* userdata, const char* const* filelist, 
 		return;
 	}
 
-	auto* data = static_cast<std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<std::pair<std::string, std::string>>>*>(userdata);
+	auto* data = static_cast<std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<std::pair<std::string, std::u16string>>>*>(userdata);
 
 	const char* extension = std::get<0>(*data);
 	std::vector<unsigned char>& fileData = std::get<1>(*data);
 	bool ignoreExtension = std::get<2>(*data);
-	std::vector<std::pair<std::string, std::string>>& properties = std::get<3>(*data);
+	std::vector<std::pair<std::string, std::u16string>>& properties = std::get<3>(*data);
 
 	std::filesystem::path filepath = *filelist;
 
@@ -56,9 +56,10 @@ static void SaveFileDialogCallback(void* userdata, const char* const* filelist, 
 		if (!properties.empty()) {
 			std::ofstream propertiesFile(filepath.string() + ".txt", std::ios::binary);
 			if (propertiesFile.is_open()) {
-				std::string propertyData;
-				for (const auto& [key, value] : properties) {
-					propertyData += key + ' ' + value + '\n';
+				std::u16string propertyData;
+				for (const auto& [key, val] : properties) {
+					// ensure all this is u16
+					propertyData += IO::ToUTF16(key) + u' ' + val + u'\n';
 				}
 				std::vector<unsigned char> bytes{ propertyData.begin(), propertyData.end() };
 				propertiesFile.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
