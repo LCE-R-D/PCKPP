@@ -40,9 +40,9 @@ void OpenPCKFile()
 	ResetUIData(filePath);
 }
 
-void SavePCKFileAs(IO::Endianness endianness)
+void SavePCKFileAs(IO::Endianness endianness, const std::string& defaultName)
 {
-	std::string filePath = IO::OpenFileDialog(GetWindow(), pckFilter);
+	std::string filePath = IO::SaveFileDialog(GetWindow(), pckFilter, {}, defaultName);
 
 	if(!filePath.empty())
 		SavePCKFile(filePath, endianness);

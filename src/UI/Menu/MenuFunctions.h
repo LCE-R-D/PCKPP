@@ -9,4 +9,4 @@ void OpenPCKFile();
 void SavePCKFile(const std::string& outpath, IO::Endianness endianness);
 
 // function for saving a PCK File to a specified point on disk
-void SavePCKFileAs(IO::Endianness endianness);
+void SavePCKFileAs(IO::Endianness endianness, const std::string& defaultName);

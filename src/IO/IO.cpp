@@ -26,6 +26,7 @@ static void SaveFileDialogCallback(void* userdata, const char* const* filelist, 
 	std::lock_guard<std::mutex> lock(gMutex);
 
 	if (!filelist || !*filelist) {
+		gDialogFinished = true;
 		SDL_Log("Save dialog cancelled or invalid file parameters passed.");
 		return;
 	}

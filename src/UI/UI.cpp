@@ -53,7 +53,7 @@ void HandleInput()
 		}
 		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false))
 		{
-			SavePCKFileAs(gPCKEndianness);
+			SavePCKFileAs(gPCKEndianness, gCurrentPCKFileName);
 		}
 	}
 }
@@ -69,7 +69,7 @@ void HandleMenuBar() {
 				SavePCKFile(gCurrentPCKFilePath, gPCKEndianness);
 			}
 			if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gCurrentPCK)) {
-				SavePCKFileAs(gPCKEndianness);
+				SavePCKFileAs(gPCKEndianness, gCurrentPCKFileName);
 			}
 			ImGui::EndMenu();
 		}
