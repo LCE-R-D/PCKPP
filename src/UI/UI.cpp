@@ -71,6 +71,8 @@ void TreeToPCKFiles()
 
 	for (const auto& f : files)
 		gCurrentPCK->addFile(&f);
+
+	files.clear();
 }
 
 void HandleInput()
