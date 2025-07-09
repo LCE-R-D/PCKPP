@@ -154,7 +154,7 @@ void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
 
 	if (mXMLSupport)
 	{
-		writer.WriteInt32(mXMLSupport);
+		writer.WriteInt32(3); // this is just for now until other XMLVersions are supported
 	}
 
 	uint32_t fileCount = static_cast<uint32_t>(mFiles.size());
