@@ -75,10 +75,50 @@ void TreeToPCKFiles()
 	files.clear();
 }
 
+FileTreeNode* FindNodeByPath(const std::string& path, std::vector<FileTreeNode>& nodes = gTreeNodes)
+{
+	for (auto& node : nodes)
+	{
+		if (node.path == path)
+			return &node;
+
+		if (FileTreeNode* found = FindNodeByPath(path, node.children))
+			return found;
+	}
+	return nullptr;
+}
+
+void DeleteNode(FileTreeNode& targetNode, std::vector<FileTreeNode>& nodes = gTreeNodes)
+{
+	auto it = std::find_if(nodes.begin(), nodes.end(), [&](const FileTreeNode& n) {
+		return &n == &targetNode;
+		});
+
+	if (it != nodes.end())
+	{
+		nodes.erase(it);
+		TreeToPCKFiles(); // rebuild tree after deletion
+	}
+
+	for (auto& node : nodes)
+	{
+		DeleteNode(targetNode, node.children);
+	}
+}
+
 void HandleInput()
 {
 	// make sure to pass false or else it will trigger multiple times
-	if (io->KeyCtrl)
+	if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+		if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too."))
+		{
+			FileTreeNode* node = FindNodeByPath(gSelectedPath);
+			if (node)
+				DeleteNode(*node);
+		}
+	}
+
+	if (io->KeyCtrl) // This is for any binds that need "Ctrl+" (like Saving and copy/paste)
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_O, false))
 		{
@@ -86,12 +126,12 @@ void HandleInput()
 		}
 		else if (gCurrentPCK && io->KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false))
 		{
-			TreeToPCKFiles();
+			TreeToPCKFiles(); // rebuild before saving
 			SavePCKFile(gCurrentPCKFilePath, gPCKEndianness);
 		}
 		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false))
 		{
-			TreeToPCKFiles();
+			TreeToPCKFiles(); // rebuild before saving
 			SavePCKFileAs(gPCKEndianness, gCurrentPCKFileName);
 		}
 	}
@@ -394,18 +434,27 @@ static bool ShowYesNoMessagePrompt(const char* title, const char* message)
 	return ShowMessagePrompt(title, message, buttons, SDL_arraysize(buttons)) == 1;
 }
 
-static void HandlePCKNodeContextMenu(const FileTreeNode& node)
+static void HandlePCKNodeContextMenu(FileTreeNode& node)
 {
-	if (node.file && ImGui::BeginPopupContextItem()) {
+	if (ImGui::BeginPopupContextItem()) {
+		bool isFile = node.file;
+
 		if (ImGui::BeginMenu("Extract")) {
-			if (ImGui::MenuItem("File"))
+			if (isFile && ImGui::MenuItem("File"))
 			{
 				SaveNodeAsFile(node);
 			}
+			if (!isFile && ImGui::MenuItem("Files"))
+			{
+				if (isFile && ImGui::MenuItem("File"))
+				{
+					SaveNodeAsFile(node);
+				}
+			}
 
-			bool hasProperties = !node.file->getProperties().empty();
+			bool hasProperties = node.file && !node.file->getProperties().empty();
 
-			if (hasProperties && ImGui::MenuItem("Properties"))
+			if (isFile && hasProperties && ImGui::MenuItem("Properties"))
 			{
 				static std::string nameStr = "Text File | *.txt";
 				static std::string patternStr = "txt";
@@ -435,19 +484,25 @@ static void HandlePCKNodeContextMenu(const FileTreeNode& node)
 				propFile.close();
 			}
 
-			if (hasProperties && ImGui::MenuItem("File with Properties"))
+			if (isFile && hasProperties && ImGui::MenuItem("File with Properties"))
 			{
 				SaveNodeAsFile(node, true);
 			}
 
 			ImGui::EndMenu();
 		}
+		if (ImGui::MenuItem("Delete")) {
+			if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too."))
+			{
+				DeleteNode(node);
+			}
+		}
 		ImGui::EndPopup();
 	}
 }
 
 // Renders the passed node, also handles children or the node
-static void RenderNode(const FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr) {
+static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr) {
 	if (visibleList)
 		visibleList->push_back(&node); // adds node to visible nodes vector, but only when needed
 
@@ -471,8 +526,11 @@ static void RenderNode(const FileTreeNode& node, std::vector<const FileTreeNode*
 		}
 		bool open = ImGui::TreeNodeEx(node.path.c_str(), flags);
 		if (ImGui::IsItemClicked()) gSelectedPath = node.path;
+
+		HandlePCKNodeContextMenu(node);
+
 		if (open) {
-			for (const auto& child : node.children)
+			for (auto& child : node.children)
 				RenderNode(child, visibleList);
 			ImGui::TreePop();
 		}
@@ -484,9 +542,9 @@ static void RenderNode(const FileTreeNode& node, std::vector<const FileTreeNode*
 		ImGui::SameLine();
 		if (ImGui::Selectable((GetFileNameFromPath(file.getPath()) + "###" + file.getPath()).c_str(), isSelected))
 			gSelectedPath = node.path;
-	}
 
-	HandlePCKNodeContextMenu(node);
+		HandlePCKNodeContextMenu(node);
+	}
 }
 
 // Finds the currently selected file
@@ -517,7 +575,7 @@ static void RenderFileTree() {
 		else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) gShouldCloseFolder = true;
 	}
 
-	for (const auto& node : gTreeNodes) RenderNode(node, &gVisibleNodes);
+	for (auto& node : gTreeNodes) RenderNode(node, &gVisibleNodes);
 
 	static int selectedIndex = -1;
 	if (ImGui::IsWindowFocused() && !gVisibleNodes.empty()) {
