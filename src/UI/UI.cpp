@@ -364,6 +364,36 @@ static void SaveNodeAsFile(const FileTreeNode& node, bool includeProperties = fa
 		IO::SaveFileDialogWithProperties(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()));
 }
 
+static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons)
+{
+	static SDL_MessageBoxData messageboxdata = {};
+	messageboxdata.flags = SDL_MESSAGEBOX_WARNING | SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT;
+	messageboxdata.title = title;
+	messageboxdata.message = message;
+	messageboxdata.numbuttons = numButtons;
+	messageboxdata.buttons = buttons;
+	messageboxdata.window = GetWindow();
+
+	int buttonID = -1;
+	if (SDL_ShowMessageBox(&messageboxdata, &buttonID)) {
+		return buttonID; // return the button ID user clicked
+	}
+	else {
+		SDL_Log("Failed to show message box: %s", SDL_GetError());
+		return -1; // indicate error
+	}
+}
+
+static bool ShowYesNoMessagePrompt(const char* title, const char* message)
+{
+	const static SDL_MessageBoxButtonData buttons[] = {
+		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes" },
+		{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No" }
+	};
+
+	return ShowMessagePrompt(title, message, buttons, SDL_arraysize(buttons)) == 1;
+}
+
 static void HandlePCKNodeContextMenu(const FileTreeNode& node)
 {
 	if (node.file && ImGui::BeginPopupContextItem()) {

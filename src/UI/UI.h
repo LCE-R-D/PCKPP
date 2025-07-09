@@ -28,3 +28,9 @@ void UISetup();
 
 // Cleanup UI related vendors
 void UICleanup();
+
+// A helper function to cut cown on work required
+static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons);
+
+// Basically a helper function to do Yes/No prompts using ShowMessagePromptBox
+static bool ShowYesNoMessagePrompt(const char* title, const char* message);
