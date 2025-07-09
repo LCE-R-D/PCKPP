@@ -446,10 +446,7 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 			}
 			if (!isFile && ImGui::MenuItem("Files"))
 			{
-				if (isFile && ImGui::MenuItem("File"))
-				{
-					SaveNodeAsFile(node);
-				}
+
 			}
 
 			bool hasProperties = node.file && !node.file->getProperties().empty();
@@ -501,6 +498,12 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 	}
 }
 
+bool IsClicked()
+{
+	return (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right)) ||
+		(ImGui::IsMouseReleased(ImGuiMouseButton_Right) && ImGui::IsItemHovered());
+}
+
 // Renders the passed node, also handles children or the node
 static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr) {
 	if (visibleList)
@@ -516,6 +519,8 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 		ScrollToNode();
 	}
 
+
+
 	if (isFolder) {
 		ImGui::PushID(node.path.c_str());
 		ImGui::Image((void*)(intptr_t)gFolderIcon.id, ImVec2(48, 48));
@@ -525,7 +530,8 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 			else if (gShouldCloseFolder) ImGui::SetNextItemOpen(false, ImGuiCond_Always);
 		}
 		bool open = ImGui::TreeNodeEx(node.path.c_str(), flags);
-		if (ImGui::IsItemClicked()) gSelectedPath = node.path;
+		if (IsClicked())
+			gSelectedPath = node.path;
 
 		HandlePCKNodeContextMenu(node);
 
@@ -541,6 +547,9 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 		ImGui::Image((void*)(intptr_t)gFileIcons[file.getAssetType()].id, ImVec2(48, 48));
 		ImGui::SameLine();
 		if (ImGui::Selectable((GetFileNameFromPath(file.getPath()) + "###" + file.getPath()).c_str(), isSelected))
+			gSelectedPath = node.path;
+
+		if (IsClicked())
 			gSelectedPath = node.path;
 
 		HandlePCKNodeContextMenu(node);
