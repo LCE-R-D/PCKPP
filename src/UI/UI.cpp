@@ -316,10 +316,11 @@ static void SaveNodeAsFile(const FileTreeNode& node, bool includeProperties = fa
 	filter.name = nameStr.c_str();
 	filter.pattern = patternStr.c_str();
 
+	// this is very dumb and I'll have to give this a rewrite sometime
 	if(includeProperties)
-		IO::SaveFileDialog(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()), true, node.file->getProperties());
+		IO::SaveFileDialogWithProperties(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()), true, node.file->getProperties());
 	else
-		IO::SaveFileDialog(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()));
+		IO::SaveFileDialogWithProperties(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()));
 }
 
 static void HandlePCKNodeContextMenu(const FileTreeNode& node)
@@ -348,10 +349,19 @@ static void HandlePCKNodeContextMenu(const FileTreeNode& node)
 					propertyData += IO::ToUTF16(key) + u' ' + val + u'\n';
 				}
 
-				IO::SaveFileDialog(GetWindow(), &filter,
-					{ propertyData.begin(), propertyData.end() },
-					GetFileNameFromPath(node.file->getPath()) + ".txt",
-					true);
+				std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, GetFileNameFromPath(node.file->getPath()) + ".txt");
+
+				std::ofstream propFile(outpath, std::ios::binary);
+
+				if (propFile.is_open())
+				{
+					const char* buffer = reinterpret_cast<const char*>(propertyData.data());
+					std::size_t byteCount = propertyData.size() * sizeof(char16_t);
+
+					propFile.write(buffer, byteCount);
+				}
+
+				propFile.close();
 			}
 
 			if (hasProperties && ImGui::MenuItem("File with Properties"))

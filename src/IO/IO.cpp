@@ -31,6 +31,15 @@ static void SaveFileDialogCallback(void* userdata, const char* const* filelist, 
 		return;
 	}
 
+	gSelectedFile = *filelist;
+
+	// Check userdata
+	if (!userdata) {
+		gDialogFinished = true;
+		gConditionVariable.notify_one();
+		return;
+	}
+
 	auto* data = static_cast<std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<std::pair<std::string, std::u16string>>>*>(userdata);
 
 	const char* extension = std::get<0>(*data);
@@ -118,7 +127,33 @@ std::string IO::OpenFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters
 	return gSelectedFile;
 }
 
-std::string IO::SaveFileDialog(SDL_Window * window, SDL_DialogFileFilter * filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt, const std::vector<std::pair<std::string, std::u16string>>& properties)
+// Gets output path
+std::string IO::SaveFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters, const std::string& defaultName)
+{
+	gDialogFinished = false;
+	gSelectedFile.clear();
+
+	SDL_ShowSaveFileDialog(SaveFileDialogCallback, nullptr, window, filters, 1, defaultName.c_str());
+
+	SDL_Event event;
+	while (!gDialogFinished)
+	{
+		while (SDL_PollEvent(&event))
+		{
+			if (event.type == SDL_EVENT_QUIT) {
+				gDialogFinished = true;
+			}
+		}
+
+		std::unique_lock<std::mutex> lock(gMutex);
+		gConditionVariable.wait_for(lock, std::chrono::milliseconds(10), [] { return gDialogFinished.load(); });
+	}
+
+	return gSelectedFile;
+}
+
+// Gets output path AND writes to file/disk
+std::string IO::SaveFileDialogWithProperties(SDL_Window * window, SDL_DialogFileFilter * filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt, const std::vector<std::pair<std::string, std::u16string>>& properties)
 {
 	gDialogFinished = false;
 	gSelectedFile.clear();

@@ -42,7 +42,9 @@ void OpenPCKFile()
 
 void SavePCKFileAs(IO::Endianness endianness, const std::string& defaultName)
 {
-	std::string filePath = IO::SaveFileDialog(GetWindow(), pckFilter, {}, defaultName);
+	PCKFile*& currentPCKFile = GetCurrentPCKFile();
+
+	std::string filePath = IO::SaveFileDialog(GetWindow(), pckFilter, defaultName);
 
 	if(!filePath.empty())
 		SavePCKFile(filePath, endianness);
