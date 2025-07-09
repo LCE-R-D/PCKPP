@@ -178,7 +178,6 @@ void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
 
 		for (const auto& [key, value] : props)
 		{
-			// key must be in global mProperties
 			auto it = std::find(mProperties.begin(), mProperties.end(), key);
 			uint32_t index = static_cast<uint32_t>(std::distance(mProperties.begin(), it));
 			writer.WriteInt32(index);
@@ -189,6 +188,34 @@ void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
 
 		writer.WriteData(file.getData().data(), file.getFileSize());
 	}
+}
+
+void PCKFile::addFile(const PCKAssetFile* file)
+{
+	// emplace just sounds cooler, okay??
+	mFiles.emplace_back(*file);
+}
+
+void PCKFile::deleteFile(const PCKAssetFile* file)
+{
+	if (!file)
+		return;
+
+	auto it = std::remove_if(mFiles.begin(), mFiles.end(), [&](const PCKAssetFile& f) {
+		return &f == file;
+		});
+
+	if (it != mFiles.end()) {
+		mFiles.erase(it, mFiles.end());
+		return;
+	}
+
+	return;
+}
+
+void PCKFile::clearFiles()
+{
+	mFiles.clear();
 }
 
 uint32_t PCKFile::getPCKVersion() const
