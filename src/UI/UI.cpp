@@ -38,6 +38,41 @@ static int gSelectedPropertyIndex = -1;
 PCKFile*& GetCurrentPCKFile() { return gCurrentPCK; }
 ImGuiIO*& GetImGuiIO() { return io; }
 
+void TreeToPCKFiles()
+{
+	if (!gCurrentPCK)
+		return;
+
+	std::vector<PCKAssetFile> files;
+
+	std::function<void(const FileTreeNode&)> collect = [&](const FileTreeNode& node) {
+		if (node.file)
+			files.push_back(*node.file);
+
+		for (const auto& child : node.children)
+			collect(child);
+		};
+
+	// First collect root files
+	for (const auto& node : gTreeNodes)
+	{
+		if (node.file)
+			collect(node);
+	}
+
+	// Then collect from folders
+	for (const auto& node : gTreeNodes)
+	{
+		if (!node.file)
+			collect(node);
+	}
+
+	gCurrentPCK->clearFiles();
+
+	for (const auto& f : files)
+		gCurrentPCK->addFile(&f);
+}
+
 void HandleInput()
 {
 	// make sure to pass false or else it will trigger multiple times
@@ -66,9 +101,11 @@ void HandleMenuBar() {
 				OpenPCKFile();
 			}
 			if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gCurrentPCK)) {
+				TreeToPCKFiles();
 				SavePCKFile(gCurrentPCKFilePath, gPCKEndianness);
 			}
 			if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gCurrentPCK)) {
+				TreeToPCKFiles();
 				SavePCKFileAs(gPCKEndianness, gCurrentPCKFileName);
 			}
 			ImGui::EndMenu();
