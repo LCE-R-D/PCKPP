@@ -86,10 +86,12 @@ void HandleInput()
 		}
 		else if (gCurrentPCK && io->KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false))
 		{
+			TreeToPCKFiles();
 			SavePCKFile(gCurrentPCKFilePath, gPCKEndianness);
 		}
 		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false))
 		{
+			TreeToPCKFiles();
 			SavePCKFileAs(gPCKEndianness, gCurrentPCKFileName);
 		}
 	}
