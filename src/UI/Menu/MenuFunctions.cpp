@@ -1,7 +1,7 @@
 #include "MenuFunctions.h"
 #include "../UI.h"
 
-SDL_DialogFileFilter pckFilter[] = {
+static SDL_DialogFileFilter pckFilter[] = {
 	{ "Minecraft LCE DLC Files (*.pck)", "pck" }
 };
 

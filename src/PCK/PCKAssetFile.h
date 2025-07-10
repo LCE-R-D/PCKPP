@@ -112,6 +112,13 @@ public:
 	// Adds a property to the file
 	void addProperty(const std::string& key, const std::u16string& value);
 
+	// Removes a property from the file
+	void removeProperty(int index);
+
+	// Clears the file's properties
+	void clearProperties();
+
+	// Returns the files properties as a... vector of a pair of a string and u16string
 	const std::vector<std::pair<std::string, std::u16string>>& getProperties() const;
 
 private:

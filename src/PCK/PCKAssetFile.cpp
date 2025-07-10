@@ -28,6 +28,17 @@ void PCKAssetFile::addProperty(const std::string& key, const std::u16string& val
 	mProperties.push_back(std::pair<std::string, std::u16string>(key, value));
 }
 
+void PCKAssetFile::removeProperty(int index)
+{
+	if (index >= 0 && index < (int)mProperties.size())
+		mProperties.erase(mProperties.begin() + index);
+}
+
+void PCKAssetFile::clearProperties()
+{
+	mProperties.clear();
+}
+
 const std::vector<std::pair<std::string, std::u16string>>& PCKAssetFile::getProperties() const
 {
 	return mProperties;
