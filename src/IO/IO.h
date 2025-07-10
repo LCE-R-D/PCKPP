@@ -15,6 +15,16 @@ namespace IO
 		ENDIANESS_TOTAL
 	};
 
+	enum class TextEncoding { // Used for reading in Text files, like CSM and properties files
+		UTF8,
+		UTF16_LE,
+		UTF16_BE,
+		TEXT_ENCODING_TOTAL
+	};
+
+	// Detects encoding using by looking for a text file's Byte Order Maker (BOM)
+	TextEncoding DetectTextEncoding(std::ifstream& in);
+
 	// For converting std::u16string to std::string (UTF-8)
 	std::string ToUTF8(const std::u16string& str);
 

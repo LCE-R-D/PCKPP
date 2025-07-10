@@ -64,7 +64,7 @@ std::string IO::ChooseFolderDialog(SDL_Window* window, const std::string& title)
 }
 
 // Because SDL needs this
-static void SaveFileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
+static void SaveFileDialogCallback(void* userdata, const char* const* filelist, int)
 {
 	std::lock_guard<std::mutex> lock(gMutex);
 
@@ -133,7 +133,7 @@ static void SaveFileDialogCallback(void* userdata, const char* const* filelist, 
 }
 
 // Because SDL needs this
-static void OpenFileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
+static void OpenFileDialogCallback(void*, const char* const* filelist, int)
 {
 	std::lock_guard<std::mutex> lock(gMutex);
 	if (filelist && *filelist) {
@@ -221,4 +221,24 @@ std::string IO::SaveFileDialogWithProperties(SDL_Window * window, SDL_DialogFile
 	}
 
 	return gSelectedFile;
+}
+
+// Detects encoding using by looking for a text file's Byte Order Maker (BOM)
+IO::TextEncoding IO::DetectTextEncoding(std::ifstream& in) {
+	char bom[4] = { 0 };
+	in.read(bom, 4);
+	size_t readBytes = in.gcount();
+	in.seekg(0);
+
+	if (readBytes >= 3 && (unsigned char)bom[0] == 0xEF && (unsigned char)bom[1] == 0xBB && (unsigned char)bom[2] == 0xBF)
+		return TextEncoding::UTF8;
+
+	if (readBytes >= 2 && (unsigned char)bom[0] == 0xFF && (unsigned char)bom[1] == 0xFE)
+		return TextEncoding::UTF16_LE;
+
+	if (readBytes >= 2 && (unsigned char)bom[0] == 0xFE && (unsigned char)bom[1] == 0xFF)
+		return TextEncoding::UTF16_BE;
+
+	// no BOM found, it's UTF-8 by default
+	return TextEncoding::UTF8;
 }
