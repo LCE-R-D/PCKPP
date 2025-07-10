@@ -131,7 +131,7 @@ void HandleInput()
 	if (io->KeyCtrl)
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
-			OpenPCKFile();
+			OpenPCKFileDialog();
 		}
 		else if (gCurrentPCK && io->KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
 			SavePCK(gPCKEndianness, gCurrentPCKFilePath); // Save
@@ -154,7 +154,7 @@ void HandleMenuBar() {
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
-				OpenPCKFile();
+				OpenPCKFileDialog();
 			}
 			if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gCurrentPCK)) {
 				SavePCK(gPCKEndianness, gCurrentPCKFilePath);
