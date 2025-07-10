@@ -1,9 +1,9 @@
-﻿// PCKPP by May/MattNL :3
+﻿// PCK++ by May/MattNL :3
 
-#include "Graphics/Graphics.h"
 #include "UI/UI.h"
+#include <SDL3/SDL_main.h>
 
-int main() 
+int main(int argc, char* argv[])
 {
 	if (!GraphicsSetup()) {
 		return 1;

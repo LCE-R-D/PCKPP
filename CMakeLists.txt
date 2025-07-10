@@ -14,6 +14,9 @@ set(SRC ${SOURCE_FILES})
 
 add_executable(PCKPP ${SRC})
 
+set_target_properties(PCKPP PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
+set_target_properties(PCKPP PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+
 find_package(OpenGL REQUIRED)
 target_link_libraries(PCKPP PRIVATE OpenGL::GL)
 target_link_libraries(PCKPP PRIVATE OpenGL::GLU)
