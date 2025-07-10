@@ -29,4 +29,7 @@ namespace IO
 
 	// For saving files with SDL's file system AND writing with support for Properties
 	std::string SaveFileDialogWithProperties(SDL_Window* window, SDL_DialogFileFilter* filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt = false, const std::vector<std::pair<std::string, std::u16string>>& properties = {});
+
+	// For choosing a folder to work with
+	std::string ChooseFolderDialog(SDL_Window* window, const std::string& title);
 }

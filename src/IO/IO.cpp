@@ -20,6 +20,49 @@ std::u16string IO::ToUTF16(const std::string& str) {
 	return convert.from_bytes(str);
 }
 
+static void ChooseFolderDialogCallback(void*, const char* const* filelist, int)
+{
+	std::lock_guard<std::mutex> lock(gMutex);
+
+	if (filelist && *filelist)
+		gSelectedFile = *filelist;
+	else
+		gSelectedFile.clear();
+
+	gDialogFinished = true;
+	gConditionVariable.notify_one();
+}
+
+std::string IO::ChooseFolderDialog(SDL_Window* window, const std::string& title)
+{
+	gDialogFinished = false;
+	gSelectedFile.clear();
+
+	SDL_ShowSaveFileDialog(ChooseFolderDialogCallback, nullptr, window, nullptr, 0, title.c_str());
+
+	SDL_Event event;
+	while (!gDialogFinished)
+	{
+		while (SDL_PollEvent(&event))
+		{
+			if (event.type == SDL_EVENT_QUIT) {
+				gDialogFinished = true;
+			}
+		}
+
+		std::unique_lock<std::mutex> lock(gMutex);
+		gConditionVariable.wait_for(lock, std::chrono::milliseconds(10), [] { return gDialogFinished.load(); });
+	}
+
+	// Strip filename, return directory path only
+	if (!gSelectedFile.empty()) {
+		std::filesystem::path path(gSelectedFile);
+		return path.parent_path().string();
+	}
+
+	return {};
+}
+
 // Because SDL needs this
 static void SaveFileDialogCallback(void* userdata, const char* const* filelist, int filterIndex)
 {

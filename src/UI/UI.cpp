@@ -75,6 +75,18 @@ void TreeToPCKFiles()
 	files.clear();
 }
 
+static void SavePCK(IO::Endianness endianness, const std::string& path = "", const std::string& defaultName = "")
+{
+	TreeToPCKFiles();
+
+	if (!path.empty()) {
+		SavePCKFile(path, endianness);
+	}
+	else {
+		SavePCKFileAs(endianness, defaultName);
+	}
+}
+
 FileTreeNode* FindNodeByPath(const std::string& path, std::vector<FileTreeNode>& nodes = gTreeNodes)
 {
 	for (auto& node : nodes)
@@ -110,29 +122,22 @@ void HandleInput()
 {
 	// make sure to pass false or else it will trigger multiple times
 	if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
-		if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too."))
-		{
-			FileTreeNode* node = FindNodeByPath(gSelectedPath);
-			if (node)
+		if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
+			if (FileTreeNode* node = FindNodeByPath(gSelectedPath))
 				DeleteNode(*node);
 		}
 	}
 
-	if (io->KeyCtrl) // This is for any binds that need "Ctrl+" (like Saving and copy/paste)
+	if (io->KeyCtrl)
 	{
-		if (ImGui::IsKeyPressed(ImGuiKey_O, false))
-		{
+		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
 			OpenPCKFile();
 		}
-		else if (gCurrentPCK && io->KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false))
-		{
-			TreeToPCKFiles(); // rebuild before saving
-			SavePCKFile(gCurrentPCKFilePath, gPCKEndianness);
+		else if (gCurrentPCK && io->KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+			SavePCK(gPCKEndianness, gCurrentPCKFilePath); // Save
 		}
-		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false))
-		{
-			TreeToPCKFiles(); // rebuild before saving
-			SavePCKFileAs(gPCKEndianness, gCurrentPCKFileName);
+		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+			SavePCK(gPCKEndianness, "", gCurrentPCKFileName); // Save As
 		}
 	}
 }
@@ -145,12 +150,10 @@ void HandleMenuBar() {
 				OpenPCKFile();
 			}
 			if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gCurrentPCK)) {
-				TreeToPCKFiles();
-				SavePCKFile(gCurrentPCKFilePath, gPCKEndianness);
+				SavePCK(gPCKEndianness, gCurrentPCKFilePath);
 			}
 			if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gCurrentPCK)) {
-				TreeToPCKFiles();
-				SavePCKFileAs(gPCKEndianness, gCurrentPCKFileName);
+				SavePCK(gPCKEndianness, "", gCurrentPCKFileName);
 			}
 			ImGui::EndMenu();
 		}
@@ -434,6 +437,77 @@ static bool ShowYesNoMessagePrompt(const char* title, const char* message)
 	return ShowMessagePrompt(title, message, buttons, SDL_arraysize(buttons)) == 1;
 }
 
+static void SaveFilePropertiesToFile(const FileTreeNode& node, const std::string& outpath)
+{
+	if (!node.file || outpath.empty())
+		return;
+
+	std::u16string propertyData;
+	for (const auto& [key, val] : node.file->getProperties()) {
+		propertyData += IO::ToUTF16(key) + u' ' + val + u'\n';
+	}
+
+	std::ofstream propFile(outpath, std::ios::binary);
+	if (propFile.is_open())
+	{
+		const char* buffer = reinterpret_cast<const char*>(propertyData.data());
+		std::size_t byteCount = propertyData.size() * sizeof(char16_t);
+		propFile.write(buffer, byteCount);
+		propFile.close();
+	}
+}
+
+static void SaveFilePropertiesAs(const FileTreeNode& node)
+{
+	static const std::string nameStr = "Text File | *.txt";
+	static const std::string patternStr = "txt";
+
+	SDL_DialogFileFilter filter{};
+	filter.name = nameStr.c_str();
+	filter.pattern = patternStr.c_str();
+
+	std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, GetFileNameFromPath(node.file->getPath()) + ".txt");
+
+	if (!outpath.empty())
+		SaveFilePropertiesToFile(node, outpath);
+}
+
+static void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties = false)
+{
+	std::string targetDir = IO::ChooseFolderDialog(GetWindow(), "Choose Output Directory");
+	if (targetDir.empty())
+		return;
+
+	std::function<void(const FileTreeNode&, const std::string&)> saveRecursive =
+		[&](const FileTreeNode& n, const std::string& currentPath)
+		{
+			if (!n.file)
+			{
+				std::string folderPath = currentPath + "/" + n.path;
+				std::filesystem::create_directories(folderPath);
+
+				for (const auto& child : n.children)
+					saveRecursive(child, folderPath);
+			}
+			else
+			{
+				std::string fileName = GetFileNameFromPath(n.path);
+				std::string filePath = currentPath + "/" + fileName;
+
+				std::ofstream outFile(filePath, std::ios::binary);
+				if (outFile)
+					outFile.write(reinterpret_cast<const char*>(n.file->getData().data()), n.file->getFileSize());
+
+				if (outFile.good() && includeProperties)
+				{
+					SaveFilePropertiesToFile(n, filePath + ".txt");
+				}
+			}
+		};
+
+	saveRecursive(node, targetDir);
+}
+
 static void HandlePCKNodeContextMenu(FileTreeNode& node)
 {
 	if (ImGui::BeginPopupContextItem()) {
@@ -446,39 +520,18 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 			}
 			if (!isFile && ImGui::MenuItem("Files"))
 			{
-
+				SaveFolderAsFiles(node);
+			}
+			if (!isFile && ImGui::MenuItem("Files with Properties"))
+			{
+				SaveFolderAsFiles(node, true);
 			}
 
 			bool hasProperties = node.file && !node.file->getProperties().empty();
 
 			if (isFile && hasProperties && ImGui::MenuItem("Properties"))
 			{
-				static std::string nameStr = "Text File | *.txt";
-				static std::string patternStr = "txt";
-
-				SDL_DialogFileFilter filter{};
-				filter.name = nameStr.c_str();
-				filter.pattern = patternStr.c_str();
-
-				std::u16string propertyData;
-				for (const auto& [key, val] : node.file->getProperties()) {
-					// ensure all this is u16
-					propertyData += IO::ToUTF16(key) + u' ' + val + u'\n';
-				}
-
-				std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, GetFileNameFromPath(node.file->getPath()) + ".txt");
-
-				std::ofstream propFile(outpath, std::ios::binary);
-
-				if (propFile.is_open())
-				{
-					const char* buffer = reinterpret_cast<const char*>(propertyData.data());
-					std::size_t byteCount = propertyData.size() * sizeof(char16_t);
-
-					propFile.write(buffer, byteCount);
-				}
-
-				propFile.close();
+				SaveFilePropertiesAs(node);
 			}
 
 			if (isFile && hasProperties && ImGui::MenuItem("File with Properties"))
