@@ -117,6 +117,9 @@ public:
 	// Removes a property from the file
 	void removeProperty(int index);
 
+	// Sets a property's key and value
+	void setPropertyAtIndex(int index, const std::string& key, const std::u16string& value);
+
 	// Clears the file's properties
 	void clearProperties();
 

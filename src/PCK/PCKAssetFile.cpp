@@ -34,6 +34,12 @@ void PCKAssetFile::removeProperty(int index)
 		mProperties.erase(mProperties.begin() + index);
 }
 
+void PCKAssetFile::setPropertyAtIndex(int index, const std::string& key, const std::u16string& value)
+{
+	if (index < 0 || index >= (int)mProperties.size()) return;
+	mProperties[index] = { key, value };
+}
+
 void PCKAssetFile::clearProperties()
 {
 	mProperties.clear();
