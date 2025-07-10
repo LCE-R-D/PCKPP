@@ -2,11 +2,22 @@
 
 #include "UI/UI.h"
 #include <SDL3/SDL_main.h>
+#include <filesystem>
 
 int main(int argc, char* argv[])
 {
 	if (!GraphicsSetup()) {
 		return 1;
+	}
+
+	if (argc > 1)
+	{
+		std::string filepath = argv[1];
+
+		std::filesystem::current_path(SDL_GetBasePath()); // set working directory to executable path
+
+		if (std::ifstream(filepath))
+			OpenPCKFile(filepath);
 	}
 
 	SDL_Window* window = GetWindow();
