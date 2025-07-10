@@ -5,6 +5,7 @@
 #include <fstream>
 #include <functional>
 #include <string>
+#include "../PCK/PCKAssetFile.h"
 
 namespace IO
 {
