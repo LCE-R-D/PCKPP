@@ -22,6 +22,9 @@ namespace IO
 		TEXT_ENCODING_TOTAL
 	};
 
+	// Swap bytes for UTF-16 Encoded BE to LE conversion
+	void SwapUTF16Bytes(char16_t* buffer, size_t count);
+
 	// Detects encoding using by looking for a text file's Byte Order Maker (BOM)
 	TextEncoding DetectTextEncoding(std::ifstream& in);
 

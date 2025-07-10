@@ -224,6 +224,13 @@ std::string IO::SaveFileDialogWithProperties(SDL_Window * window, SDL_DialogFile
 	return gSelectedFile;
 }
 
+void IO::SwapUTF16Bytes(char16_t* buffer, size_t count) {
+	for (size_t i = 0; i < count; ++i) {
+		char16_t& c = buffer[i];
+		c = (c >> 8) | (c << 8);
+	}
+}
+
 // Detects encoding using by looking for a text file's Byte Order Maker (BOM)
 IO::TextEncoding IO::DetectTextEncoding(std::ifstream& in) {
 	char bom[4] = { 0 };
