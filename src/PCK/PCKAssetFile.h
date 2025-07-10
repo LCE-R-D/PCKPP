@@ -9,6 +9,8 @@
 class PCKAssetFile
 {
 public:
+	using Property = std::pair<std::string, std::u16string>;
+
 	enum class Type
 	{
 		// *.png for Skins; used for Skin initialization
@@ -119,11 +121,11 @@ public:
 	void clearProperties();
 
 	// Returns the files properties as a... vector of a pair of a string and u16string
-	const std::vector<std::pair<std::string, std::u16string>>& getProperties() const;
+	const std::vector<Property>& getProperties() const;
 
 private:
 	Type mAssetType{ Type::SKIN };
 	std::vector<unsigned char> mData;
 	std::string mPath;
-	std::vector<std::pair<std::string, std::u16string>> mProperties;
+	std::vector<Property> mProperties;
 };

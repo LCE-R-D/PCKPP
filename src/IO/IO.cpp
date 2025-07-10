@@ -4,6 +4,7 @@
 #include <vector>
 #include <codecvt>
 #include <filesystem>
+#include "../PCK/PCKAssetFile.h"
 
 static std::mutex gMutex;
 static std::condition_variable gConditionVariable;
@@ -83,12 +84,12 @@ static void SaveFileDialogCallback(void* userdata, const char* const* filelist, 
 		return;
 	}
 
-	auto* data = static_cast<std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<std::pair<std::string, std::u16string>>>*>(userdata);
+	auto* data = static_cast<std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<PCKAssetFile::Property>>*>(userdata);
 
 	const char* extension = std::get<0>(*data);
 	std::vector<unsigned char>& fileData = std::get<1>(*data);
 	bool ignoreExtension = std::get<2>(*data);
-	std::vector<std::pair<std::string, std::u16string>>& properties = std::get<3>(*data);
+	std::vector<PCKAssetFile::Property>& properties = std::get<3>(*data);
 
 	std::filesystem::path filepath = *filelist;
 
@@ -196,13 +197,13 @@ std::string IO::SaveFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters
 }
 
 // Gets output path AND writes to file/disk
-std::string IO::SaveFileDialogWithProperties(SDL_Window * window, SDL_DialogFileFilter * filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt, const std::vector<std::pair<std::string, std::u16string>>& properties)
+std::string IO::SaveFileDialogWithProperties(SDL_Window * window, SDL_DialogFileFilter * filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt, const std::vector<PCKAssetFile::Property>& properties)
 {
 	gDialogFinished = false;
 	gSelectedFile.clear();
 
 	// this is a kinda silly way to do this
-	auto* data = new std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<std::pair<std::string, std::u16string>>>(filters->pattern, fileData, ignoreExt, properties);
+	auto* data = new std::tuple<const char*, std::vector<unsigned char>, bool, std::vector<PCKAssetFile::Property>>(filters->pattern, fileData, ignoreExt, properties);
 
 	SDL_ShowSaveFileDialog(SaveFileDialogCallback, data, window, filters, 1, defaultName.c_str());
 

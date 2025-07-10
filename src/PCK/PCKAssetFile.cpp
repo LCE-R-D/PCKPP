@@ -25,7 +25,7 @@ PCKAssetFile::Type PCKAssetFile::getAssetType() const {
 }
 
 void PCKAssetFile::addProperty(const std::string& key, const std::u16string& value) {
-	mProperties.push_back(std::pair<std::string, std::u16string>(key, value));
+	mProperties.push_back(PCKAssetFile::Property(key, value));
 }
 
 void PCKAssetFile::removeProperty(int index)
@@ -39,7 +39,7 @@ void PCKAssetFile::clearProperties()
 	mProperties.clear();
 }
 
-const std::vector<std::pair<std::string, std::u16string>>& PCKAssetFile::getProperties() const
+const std::vector<PCKAssetFile::Property>& PCKAssetFile::getProperties() const
 {
 	return mProperties;
 }
