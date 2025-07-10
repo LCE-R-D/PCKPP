@@ -284,13 +284,64 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 	else {
 		int propertyIndex = 0;
 
-		for (const auto& [key, value] : properties) {
-			std::string& propertyName = key + "###Properties" + std::to_string(propertyIndex);
-			if(ImGui::Selectable(propertyName.c_str(), propertyIndex == gSelectedPropertyIndex))
+		if (ImGui::BeginTable("PropertiesTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
+		{
+			float maxKeyWidth = ImGui::CalcTextSize("KEY").x;
+			for (const auto& [key, _] : properties)
 			{
-				gSelectedPropertyIndex = propertyIndex;
+				ImVec2 size = ImGui::CalcTextSize(key.c_str());
+				if (size.x > maxKeyWidth)
+					maxKeyWidth = size.x;
 			}
-			propertyIndex++;
+			maxKeyWidth += 10.0f;
+
+			ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, maxKeyWidth);
+			ImGui::TableSetupColumn("Value");
+			ImGui::TableHeadersRow();
+
+			int propertyIndex = 0;
+			for (const auto& [key, value] : properties)
+			{
+				ImGui::TableNextRow();
+
+				char keyBuffer[0x11];
+				char valueBuffer[0x1001];
+
+				std::strncpy(keyBuffer, key.c_str(), sizeof(keyBuffer) - 1);
+				keyBuffer[sizeof(keyBuffer) - 1] = '\0';
+
+				std::string utf8Value = IO::ToUTF8(value);
+				std::strncpy(valueBuffer, utf8Value.c_str(), sizeof(valueBuffer) - 1);
+				valueBuffer[sizeof(valueBuffer) - 1] = '\0';
+
+				bool modified = false;
+
+				ImGui::TableSetColumnIndex(0);
+				std::string keyLabel = "##Key" + std::to_string(propertyIndex);
+				ImGui::SetNextItemWidth(-1); // this is needed to make the input the full size of the column for some reason
+				if (ImGui::InputText(keyLabel.c_str(), keyBuffer, sizeof(keyBuffer)))
+					modified = true;
+
+				ImGui::TableSetColumnIndex(1);
+				std::string valueLabel = "##Value" + std::to_string(propertyIndex);
+				ImGui::SetNextItemWidth(-1);
+				if (ImGui::InputText(valueLabel.c_str(), valueBuffer, sizeof(valueBuffer)))
+					modified = true;
+
+				if (modified)
+				{
+					std::string keyText = keyBuffer;
+					for (char& c : keyText)
+						c = std::toupper(c);
+
+					PCKAssetFile& editableFile = const_cast<PCKAssetFile&>(file);
+					editableFile.setPropertyAtIndex(propertyIndex, keyText.empty() ? "KEY" : keyText, IO::ToUTF16(valueBuffer));
+				}
+
+				++propertyIndex;
+			}
+
+			ImGui::EndTable();
 		}
 	}
 
@@ -847,6 +898,10 @@ void UISetup() {
 		std::string path = "assets/icons/FILE_" + name + ".png";
 		gFileIcons[type] = LoadTextureFromFile(path, GL_LINEAR_MIPMAP_LINEAR);
 	}
+
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.CellPadding = ImVec2(0, 0);
+
 	io = &ImGui::GetIO();
 	io->FontAllowUserScaling = true;
 
