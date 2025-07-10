@@ -259,13 +259,29 @@ static void BuildFileTree() {
 	gTreeNodes = std::move(root.children);
 }
 
+static void HandlePropertiesContextWindow(PCKAssetFile& file, int propertyIndex = -1)
+{
+	if (ImGui::BeginPopupContextItem())
+	{
+		if (ImGui::MenuItem("Add"))
+		{
+			file.addProperty("KEY", u"VALUE");
+		}
+		if (propertyIndex > -1 && ImGui::MenuItem("Delete"))
+		{
+			file.removeProperty(propertyIndex);
+		}
+		ImGui::EndPopup();
+	}
+}
+
 static void HandlePropertiesWindow(const PCKAssetFile& file)
 {
 	if (gLastPreviewedFile != &file) {
 		gLastPreviewedFile = &file;
 	}
 
-	const auto& properties = file.getProperties();
+	const auto properties = file.getProperties(); // make a copy of properties
 
 	float propertyWindowPosX = io->DisplaySize.x * 0.25f;
 	float propertyWindowHeight = (io->DisplaySize.y * 0.35f) - gMainMenuBarHeight;
@@ -277,6 +293,16 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
 		ImGuiWindowFlags_HorizontalScrollbar);
+
+	// very stupid lol
+	PCKAssetFile& editableFile = const_cast<PCKAssetFile&>(file);
+
+	if (ImGui::BeginPopupContextWindow("PropertiesContextWindow", ImGuiPopupFlags_MouseButtonRight))
+	{
+		if (ImGui::MenuItem("Add"))
+			editableFile.addProperty("KEY", u"VALUE");
+		ImGui::EndPopup();
+	}
 
 	if (properties.empty()) {
 		ImGui::Text("NO PROPERTIES");
@@ -311,22 +337,29 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 				keyBuffer[sizeof(keyBuffer) - 1] = '\0';
 
 				std::string utf8Value = IO::ToUTF8(value);
-				std::strncpy(valueBuffer, utf8Value.c_str(), sizeof(valueBuffer) - 1);
-				valueBuffer[sizeof(valueBuffer) - 1] = '\0';
+				std::size_t len = std::min(utf8Value.size(), sizeof(valueBuffer) - 1);
+				std::memcpy(valueBuffer, utf8Value.data(), len);
+				valueBuffer[len] = '\0';
 
 				bool modified = false;
 
 				ImGui::TableSetColumnIndex(0);
 				std::string keyLabel = "##Key" + std::to_string(propertyIndex);
-				ImGui::SetNextItemWidth(-1); // this is needed to make the input the full size of the column for some reason
+				ImGui::SetNextItemWidth(-FLT_MIN); // this is needed to make the input the full size of the column for some reason
 				if (ImGui::InputText(keyLabel.c_str(), keyBuffer, sizeof(keyBuffer)))
 					modified = true;
 
+				// context menu
+				HandlePropertiesContextWindow(editableFile, propertyIndex);
+
 				ImGui::TableSetColumnIndex(1);
 				std::string valueLabel = "##Value" + std::to_string(propertyIndex);
-				ImGui::SetNextItemWidth(-1);
+				ImGui::SetNextItemWidth(-FLT_MIN);
 				if (ImGui::InputText(valueLabel.c_str(), valueBuffer, sizeof(valueBuffer)))
 					modified = true;
+
+				// context menu; again because I want it to work with both rows
+				HandlePropertiesContextWindow(editableFile, propertyIndex);
 
 				if (modified)
 				{
@@ -334,7 +367,6 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 					for (char& c : keyText)
 						c = std::toupper(c);
 
-					PCKAssetFile& editableFile = const_cast<PCKAssetFile&>(file);
 					editableFile.setPropertyAtIndex(propertyIndex, keyText.empty() ? "KEY" : keyText, IO::ToUTF16(valueBuffer));
 				}
 
