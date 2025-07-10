@@ -19,7 +19,7 @@ Texture gFolderIcon;
 // Preview globals
 Texture gPreviewTexture{};
 std::string gPreviewTitle = "Preview";
-static const PCKAssetFile* lastPreviewedFile = nullptr;
+static const PCKAssetFile* gLastPreviewedFile = nullptr;
 
 // Instance globals
 PCKFile* gCurrentPCK{ nullptr };
@@ -142,6 +142,13 @@ void HandleInput()
 	}
 }
 
+void ResetPreviewWindow()
+{
+	glDeleteTextures(1, &gPreviewTexture.id);
+	gPreviewTexture = {};
+	gLastPreviewedFile = nullptr;
+}
+
 // Handles the menu bar, functions are held in MenuFunctions.h/cpp
 void HandleMenuBar() {
 	if (ImGui::BeginMainMenuBar()) {
@@ -254,8 +261,8 @@ static void BuildFileTree() {
 
 static void HandlePropertiesWindow(const PCKAssetFile& file)
 {
-	if (lastPreviewedFile != &file) {
-		lastPreviewedFile = &file;
+	if (gLastPreviewedFile != &file) {
+		gLastPreviewedFile = &file;
 	}
 
 	const auto& properties = file.getProperties();
@@ -296,16 +303,15 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 	static float userZoom = 1.0f;
 
 	// if ID is valid AND last file is not the current file
-	if (gPreviewTexture.id != 0 && lastPreviewedFile != &file) {
-		glDeleteTextures(1, &gPreviewTexture.id);
-		gPreviewTexture = {};
+	if (gPreviewTexture.id != 0 && gLastPreviewedFile != &file) {
+		ResetPreviewWindow();
 		zoomChanged = false;
 		userZoom = 1.0f;
 	}
 
-	if (lastPreviewedFile != &file) {
+	if (gLastPreviewedFile != &file) {
 		gPreviewTexture = LoadTextureFromMemory(file.getData().data(), file.getFileSize());
-		lastPreviewedFile = &file;
+		gLastPreviewedFile = &file;
 		gPreviewTitle = file.getPath() + " (" + std::to_string(gPreviewTexture.width) + "x" + std::to_string(gPreviewTexture.height) + ")###Preview";
 
 		userZoom = 1.0f;
@@ -381,15 +387,12 @@ static void ScrollToNode()
 
 static void SaveNodeAsFile(const FileTreeNode& node, bool includeProperties = false)
 {
-	const std::string& path = node.file->getPath();
+	std::filesystem::path filePath(node.file->getPath());
 
-	std::string ext = path.substr(path.find_last_of('.') + 1);
+	std::string ext = filePath.extension().string();
+	if (!ext.empty() && ext[0] == '.')
+		ext.erase(0, 1);
 
-	// Fallback extension if none found
-	if (ext.empty() || ext == path)
-		ext = "";
-
-	// Use static so memory stays valid while the dialog is open
 	static std::string nameStr;
 	static std::string patternStr;
 
@@ -539,6 +542,154 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 				SaveNodeAsFile(node, true);
 			}
 
+			ImGui::EndMenu();
+		}
+		if (isFile && ImGui::BeginMenu("Replace"))
+		{
+			if (ImGui::MenuItem("File Data"))
+			{
+				std::filesystem::path filePath(node.file->getPath());
+
+				std::string ext = filePath.extension().string();
+				if (!ext.empty() && ext[0] == '.')
+					ext.erase(0, 1);
+
+				std::string label = std::string(node.file->getAssetTypeString()) + " File | *." + ext + " File";
+				SDL_DialogFileFilter filters[] = {
+					{ label.c_str(), ext.c_str() },
+					{ "All Files", "*" }
+				};
+
+				std::string inpath = IO::OpenFileDialog(GetWindow(), filters);
+
+				if (!inpath.empty())
+				{
+					std::ifstream in(inpath, std::ios::binary | std::ios::ate);
+					if (in)
+					{
+						std::streamsize size = in.tellg();
+						in.seekg(0, std::ios::beg);
+						std::vector<unsigned char> buffer(size);
+
+						in.read(reinterpret_cast<char*>(buffer.data()), size);
+						if (in.gcount() == size)
+						{
+							node.file->setData(buffer);
+						}
+						in.close();
+
+						ResetPreviewWindow();
+					}
+				}
+			}
+			if (ImGui::MenuItem("File Properties"))
+			{
+				SDL_DialogFileFilter filters[] = {
+					{ "Text File", "txt" },
+					{ "All Files", "*" }
+				};
+
+				std::string inpath = IO::OpenFileDialog(GetWindow(), filters);
+
+				if (!inpath.empty())
+				{
+					std::ifstream in(inpath, std::ios::binary);
+					if (in)
+					{
+						node.file->clearProperties();
+						IO::TextEncoding encoding = IO::DetectTextEncoding(in);
+
+						std::string key;
+						std::u16string value;
+
+						if (encoding == IO::TextEncoding::UTF8)
+						{
+							// Skip BOM if present
+							char first3[3] = { 0 };
+							in.read(first3, 3);
+							if (!((unsigned char)first3[0] == 0xEF && (unsigned char)first3[1] == 0xBB && (unsigned char)first3[2] == 0xBF))
+								in.seekg(0);
+
+							std::string line;
+							while (std::getline(in, line))
+							{
+								if (line.empty()) continue;
+
+								std::istringstream iss(line);
+								if (!(iss >> key)) continue;
+
+								// Strip trailing colon, if any
+								if (!key.empty() && key.back() == u':')
+									key.pop_back();
+
+								std::string value8;
+								std::getline(iss, value8);
+								value8.erase(0, value8.find_first_not_of(" \t"));
+
+								value = IO::ToUTF16(value8);
+
+								node.file->addProperty(key, value);
+							}
+						}
+						else if (encoding == IO::TextEncoding::UTF16_LE || encoding == IO::TextEncoding::UTF16_BE)
+						{
+							// Skip BOM (2 bytes)
+							in.seekg(2);
+
+							in.seekg(0, std::ios::end);
+							size_t fileSize = in.tellg();
+							in.seekg(2, std::ios::beg);
+
+							size_t numChars = (fileSize - 2) / 2;
+							std::vector<char16_t> buffer(numChars);
+
+							in.read(reinterpret_cast<char*>(buffer.data()), numChars * 2);
+
+							if (encoding == IO::TextEncoding::UTF16_BE)
+								IO::SwapUTF16Bytes(buffer.data(), numChars);
+
+							size_t start = 0;
+							for (size_t i = 0; i <= numChars; ++i)
+							{
+								if (i == numChars || buffer[i] == u'\n')
+								{
+									std::u16string line(buffer.data() + start, i - start);
+									start = i + 1;
+
+									if (line.empty()) continue;
+									if (!line.empty() && line.back() == u'\r')
+										line.pop_back();
+
+									size_t key_end = 0;
+									while (key_end < line.size() && line[key_end] != u' ' && line[key_end] != u'\t')
+										++key_end;
+
+									std::u16string key16 = line.substr(0, key_end);
+
+									// Strip trailing colon, if any
+									if (!key16.empty() && key16.back() == u':')
+										key16.pop_back();
+									if (key_end < line.size())
+									{
+										value = line.substr(key_end);
+
+										// trimming the whitespace
+										size_t pos = 0;
+										while (pos < value.size() && (value[pos] == u' ' || value[pos] == u'\t')) ++pos;
+										if (pos > 0) value.erase(0, pos);
+									}
+
+									key = IO::ToUTF8(key16);
+								}
+							}
+						}
+						if (key.empty()) // value can be empty, and is expected sometimes, like in the case of Texture ANIMs
+						{
+							node.file->addProperty(key, value);
+						}
+					}
+				}
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::MenuItem("Delete")) {
