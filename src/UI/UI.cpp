@@ -231,7 +231,7 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 
 	if (ImGui::IsWindowHovered() && ImGui::GetIO().KeyCtrl && ImGui::GetIO().MouseWheel != 0.0f) {
 		float zoomDelta = ImGui::GetIO().MouseWheel * 0.1f;
-		userZoom = std::clamp(userZoom * (1.0f + zoomDelta), 0.5f, 100.0f); // this clamp is a little weird but it works lol
+		userZoom = std::clamp(userZoom * (1.0f + zoomDelta), 0.01f, 100.0f); // this clamp is a little weird but it works lol
 		zoomChanged = true;
 	}
 
@@ -253,7 +253,7 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 	ImGui::Image((ImTextureID)(intptr_t)gPreviewTexture.id, imageSize);
 
 	std::stringstream ss;
-	ss << "Zoom: " << std::fixed << std::setprecision(1) << (userZoom) << "%";
+	ss << "Zoom: " << std::fixed << std::setprecision(2) << (userZoom * 100.0f) << "%";
 	std::string zoomText = ss.str();
 	ImVec2 textSize = ImGui::CalcTextSize(zoomText.c_str());
 	ImVec2 textPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x - textSize.x - 20, ImGui::GetWindowPos().y);
