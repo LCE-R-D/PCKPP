@@ -15,6 +15,12 @@ PCKFile*& GetCurrentPCKFile();
 // Get the instance's current ImGui IO stuff
 ImGuiIO*& GetImGuiIO();
 
+// Instead of writing a 1,000 success messages
+void ShowSuccessMessage();
+
+// Instead of writing a 1,000 cancelled messages
+void ShowCancelledMessage();
+
 // Handle input for the UI, like keystrokes
 void HandleInput();
 

@@ -39,10 +39,10 @@ void OpenPCKFileDialog()
 {
 	std::string filePath = IO::OpenFileDialog(GetWindow(), pckFilter);
 
-	if(!filePath.empty())
+	if (!filePath.empty())
 		OpenPCKFile(filePath);
 	else
-		
+		ShowCancelledMessage();
 }
 
 void SavePCKFileAs(IO::Endianness endianness, const std::string& defaultName)
@@ -53,6 +53,8 @@ void SavePCKFileAs(IO::Endianness endianness, const std::string& defaultName)
 
 	if(!filePath.empty())
 		SavePCKFile(filePath, endianness);
+	else
+		ShowCancelledMessage();
 }
 
 void SavePCKFile(const std::string& outpath, IO::Endianness endianness)
@@ -178,6 +180,8 @@ void SetPropertiesFromFile(PCKAssetFile& file)
 			}
 		}
 	}
+	else
+		ShowCancelledMessage();
 }
 
 bool SetDataFromFile(PCKAssetFile& file)
@@ -215,6 +219,8 @@ bool SetDataFromFile(PCKAssetFile& file)
 			return true;
 		}
 	}
+
+	ShowCancelledMessage();
 
 	return false;
 }

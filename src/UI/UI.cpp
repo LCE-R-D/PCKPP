@@ -34,6 +34,16 @@ static int gSelectedPropertyIndex = -1;
 PCKFile*& GetCurrentPCKFile() { return gCurrentPCK; }
 ImGuiIO*& GetImGuiIO() { return io; }
 
+void ShowSuccessMessage()
+{
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Success", "Operation performed successfully.", GetWindow());
+}
+
+void ShowCancelledMessage()
+{
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Cancelled", "User aborted operation.", GetWindow());
+}
+
 void TreeToPCKFiles()
 {
 	if (!gCurrentPCK)
@@ -122,6 +132,8 @@ void HandleInput()
 			if (FileTreeNode* node = FindNodeByPath(gSelectedPath))
 				DeleteNode(*node);
 		}
+		else
+			ShowCancelledMessage();
 	}
 
 	if (io->KeyCtrl)
@@ -293,7 +305,7 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 	// very stupid lol
 	PCKAssetFile& editableFile = const_cast<PCKAssetFile&>(file);
 
-	if (ImGui::BeginPopupContextWindow("PropertiesContextWindow", ImGuiPopupFlags_MouseButtonRight))
+	if (ImGui::BeginPopupContextWindow("PropertiesContextWindow"))
 	{
 		if (ImGui::MenuItem("Add"))
 			editableFile.addProperty("KEY", u"VALUE");
@@ -464,9 +476,9 @@ static void ScrollToNode()
 	gKeyboardScrolled = false;
 }
 
-static void SaveNodeAsFile(const FileTreeNode& node, bool includeProperties = false)
+static void ExtractDataToFile(const PCKAssetFile& file, bool includeProperties = false)
 {
-	std::filesystem::path filePath(node.file->getPath());
+	std::filesystem::path filePath(file.getPath());
 
 	std::string ext = filePath.extension().string();
 	if (!ext.empty() && ext[0] == '.')
@@ -475,18 +487,25 @@ static void SaveNodeAsFile(const FileTreeNode& node, bool includeProperties = fa
 	static std::string nameStr;
 	static std::string patternStr;
 
-	nameStr = std::string(node.file->getAssetTypeString()) + " | *." + ext + " File";
+	nameStr = std::string(file.getAssetTypeString()) + " | *." + ext + " File";
 	patternStr = ext;
 
 	SDL_DialogFileFilter filter{};
 	filter.name = nameStr.c_str();
 	filter.pattern = patternStr.c_str();
 
+	std::string outPath{};
+
 	// this is very dumb and I'll have to give this a rewrite sometime
 	if(includeProperties)
-		IO::SaveFileDialogWithProperties(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()), true, node.file->getProperties());
+		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), GetFileNameFromPath(file.getPath()), true, file.getProperties());
 	else
-		IO::SaveFileDialogWithProperties(GetWindow(), &filter, node.file->getData(), GetFileNameFromPath(node.file->getPath()));
+		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), GetFileNameFromPath(file.getPath()));
+
+	if (!outPath.empty())
+		ShowSuccessMessage();
+	else
+		ShowCancelledMessage();
 }
 
 static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons)
@@ -519,13 +538,15 @@ static bool ShowYesNoMessagePrompt(const char* title, const char* message)
 	return ShowMessagePrompt(title, message, buttons, SDL_arraysize(buttons)) == 1;
 }
 
-static void SaveFilePropertiesToFile(const FileTreeNode& node, const std::string& outpath)
+static void SaveFilePropertiesToFile(const PCKAssetFile& file, const std::string& outpath)
 {
-	if (!node.file || outpath.empty())
+	if (outpath.empty())
+	{
 		return;
+	}
 
 	std::u16string propertyData;
-	for (const auto& [key, val] : node.file->getProperties()) {
+	for (const auto& [key, val] : file.getProperties()) {
 		propertyData += IO::ToUTF16(key) + u' ' + val + u'\n';
 	}
 
@@ -539,7 +560,7 @@ static void SaveFilePropertiesToFile(const FileTreeNode& node, const std::string
 	}
 }
 
-static void SaveFilePropertiesAs(const FileTreeNode& node)
+static void SaveFilePropertiesAs(const PCKAssetFile& file)
 {
 	static const std::string nameStr = "Text File | *.txt";
 	static const std::string patternStr = "txt";
@@ -548,46 +569,60 @@ static void SaveFilePropertiesAs(const FileTreeNode& node)
 	filter.name = nameStr.c_str();
 	filter.pattern = patternStr.c_str();
 
-	std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, GetFileNameFromPath(node.file->getPath()) + ".txt");
+	std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, GetFileNameFromPath(file.getPath()) + ".txt");
 
 	if (!outpath.empty())
-		SaveFilePropertiesToFile(node, outpath);
+	{
+		SaveFilePropertiesToFile(file, outpath);
+		ShowSuccessMessage();
+	}
+	else
+		ShowCancelledMessage();
 }
 
 static void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties = false)
 {
 	std::string targetDir = IO::ChooseFolderDialog(GetWindow(), "Choose Output Directory");
 	if (targetDir.empty())
+	{
+		ShowCancelledMessage();
 		return;
+	}
 
-	std::function<void(const FileTreeNode&, const std::string&)> saveRecursive =
-		[&](const FileTreeNode& n, const std::string& currentPath)
-		{
-			if (!n.file)
+	try {
+		std::function<void(const FileTreeNode&, const std::string&)> saveRecursive =
+			[&](const FileTreeNode& n, const std::string& currentPath)
 			{
-				std::string folderPath = currentPath + "/" + n.path;
-				std::filesystem::create_directories(folderPath);
-
-				for (const auto& child : n.children)
-					saveRecursive(child, folderPath);
-			}
-			else
-			{
-				std::string fileName = GetFileNameFromPath(n.path);
-				std::string filePath = currentPath + "/" + fileName;
-
-				std::ofstream outFile(filePath, std::ios::binary);
-				if (outFile)
-					outFile.write(reinterpret_cast<const char*>(n.file->getData().data()), n.file->getFileSize());
-
-				if (outFile.good() && includeProperties)
+				if (!n.file)
 				{
-					SaveFilePropertiesToFile(n, filePath + ".txt");
-				}
-			}
-		};
+					std::string folderPath = currentPath + "/" + n.path;
+					std::filesystem::create_directories(folderPath);
 
-	saveRecursive(node, targetDir);
+					for (const auto& child : n.children)
+						saveRecursive(child, folderPath);
+				}
+				else
+				{
+					std::string fileName = GetFileNameFromPath(n.path);
+					std::string filePath = currentPath + "/" + fileName;
+
+					std::ofstream outFile(filePath, std::ios::binary);
+					if (outFile)
+						outFile.write(reinterpret_cast<const char*>(n.file->getData().data()), n.file->getFileSize());
+
+					if (outFile.good() && includeProperties)
+					{
+						SaveFilePropertiesToFile(*n.file, filePath + ".txt");
+					}
+				}
+			};
+
+		saveRecursive(node, targetDir);
+	}
+	catch (...)
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", SDL_GetError(), GetWindow());
+	}
 }
 
 static void HandlePCKNodeContextMenu(FileTreeNode& node)
@@ -598,7 +633,7 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 		if (ImGui::BeginMenu("Extract")) {
 			if (isFile && ImGui::MenuItem("File"))
 			{
-				SaveNodeAsFile(node);
+				ExtractDataToFile(*node.file);
 			}
 			if (!isFile && ImGui::MenuItem("Files"))
 			{
@@ -613,12 +648,12 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 
 			if (isFile && hasProperties && ImGui::MenuItem("Properties"))
 			{
-				SaveFilePropertiesAs(node);
+				SaveFilePropertiesAs(*node.file);
 			}
 
 			if (isFile && hasProperties && ImGui::MenuItem("File with Properties"))
 			{
-				SaveNodeAsFile(node, true);
+				ExtractDataToFile(*node.file, true);
 			}
 
 			ImGui::EndMenu();
@@ -641,6 +676,8 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 			{
 				DeleteNode(node);
 			}
+			else
+				ShowCancelledMessage();
 		}
 		ImGui::EndPopup();
 	}
@@ -649,6 +686,7 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 bool IsClicked()
 {
 	return (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right)) ||
+		// for context support; selecting and opening a node when a context menu is already opened
 		(ImGui::IsMouseReleased(ImGuiMouseButton_Right) && ImGui::IsItemHovered());
 }
 
@@ -666,8 +704,6 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 		flags |= ImGuiTreeNodeFlags_Selected;
 		ScrollToNode();
 	}
-
-
 
 	if (isFolder) {
 		ImGui::PushID(node.path.c_str());
