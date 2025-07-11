@@ -9,6 +9,10 @@ struct FileTreeNode {
 	std::vector<FileTreeNode> children;
 };
 
+void SavePCK(std::vector<FileTreeNode> nodes, IO::Endianness endianness, const std::string& path = "", const std::string& defaultName = "");
+
+void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties = false);
+
 // Convert file tree to PCK File collection
 void TreeToPCKFileCollection(std::vector<FileTreeNode>& treeNodes);
 

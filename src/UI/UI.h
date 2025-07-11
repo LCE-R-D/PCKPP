@@ -12,6 +12,21 @@
 // Get the instance's current PCK File
 PCKFile*& GetCurrentPCKFile();
 
+// Setup UI related Vendors
+void UISetup();
+
+// Cleanup UI related vendors
+void UICleanup();
+
+// Reset PCK++ UI Data; optional filepath passing for when opening the file
+void ResetUIData(const std::string& filePath = "");
+
+// Handles the menu bar, functions are held in MenuFunctions.h/cpp
+void HandleMenuBar();
+
+// Handle input for the UI, like keystrokes
+void HandleInput();
+
 // Instead of writing a 1,000 success messages
 void ShowSuccessMessage();
 
@@ -24,20 +39,5 @@ static int ShowMessagePrompt(const char* title, const char* message, const SDL_M
 // Basically a helper function to do Yes/No prompts using ShowMessagePromptBox
 static bool ShowYesNoMessagePrompt(const char* title, const char* message);
 
-// Handle input for the UI, like keystrokes
-void HandleInput();
-
-// Render and Maintain Menu Bar
-void HandleMenuBar();
-
-// Render and Maintain File Tree
+// Handles the file tree, functions are held in TreeFunctions.h/cpp
 void HandleFileTree();
-
-// Reset PCK++ UI Data; optional filepath passing for when opening the file
-void ResetUIData(const std::string& filePath = "");
-
-// Setup UI related Vendors
-void UISetup();
-
-// Cleanup UI related vendors
-void UICleanup();

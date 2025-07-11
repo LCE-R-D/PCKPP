@@ -20,65 +20,61 @@ static IO::Endianness gPCKEndianness{ IO::Endianness::LITTLE };
 
 PCKFile*& GetCurrentPCKFile() { return gCurrentPCK; }
 
-void ShowSuccessMessage()
-{
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Success", "Operation performed successfully.", GetWindow());
-}
-
-void ShowCancelledMessage()
-{
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Cancelled", "User aborted operation.", GetWindow());
-}
-
-static void SavePCK(IO::Endianness endianness, const std::string& path = "", const std::string& defaultName = "")
-{
-	TreeToPCKFileCollection(gTreeNodes);
-
-	if (!path.empty()) {
-		SavePCKFile(path, endianness);
-	}
-	else {
-		SavePCKFileDialog(endianness, defaultName);
-	}
-}
-
-void HandleInput()
-{
-	// make sure to pass false or else it will trigger multiple times
-	if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
-		if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
-			if (FileTreeNode* node = FindNodeByPath(gSelectedNodePath, gTreeNodes))
-			{
-				DeleteNode(*node, gTreeNodes);
-				TreeToPCKFileCollection(gTreeNodes);
-			}
-		}
-		else
-			ShowCancelledMessage();
+void UISetup() {
+	gFolderIcon = LoadTextureFromFile("assets/icons/NODE_FOLDER.png", GL_LINEAR_MIPMAP_LINEAR);
+	for (int i = 0; i < (int)PCKAssetFile::Type::PCK_ASSET_TYPES_TOTAL; i++) {
+		auto type = static_cast<PCKAssetFile::Type>(i);
+		std::string name = (type == PCKAssetFile::Type::UI_DATA)
+			? PCKAssetFile::getAssetTypeString(PCKAssetFile::Type::PCK_ASSET_TYPES_TOTAL)
+			: PCKAssetFile::getAssetTypeString(type);
+		std::string path = "assets/icons/FILE_" + name + ".png";
+		gFileIcons[type] = LoadTextureFromFile(path, GL_LINEAR_MIPMAP_LINEAR);
 	}
 
-	if (ImGui::GetIO().KeyCtrl)
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.CellPadding = ImVec2(0, 0);
+
+	ImFontConfig config;
+	config.MergeMode = false;
+	config.PixelSnapH = true;
+
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/m6x11plus.ttf", 18.0f, &config);
+
+	config.MergeMode = true;
+
+	// Merge Chinese (Simplified)
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
+	// Merge Chinese (Traditional)
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
+	// Merge Japanese
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
+	// Merge Korean
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesKorean());
+
+	ImGui::GetIO().Fonts->Build();
+}
+
+void UICleanup() {
+	ResetUIData();
+	for (auto& [type, tex] : gFileIcons)
+		if (tex.id != 0)
+			glDeleteTextures(1, &tex.id);
+	gFileIcons.clear();
+}
+
+void ResetUIData(const std::string& filePath) {
+
+	if (gCurrentPCK)
 	{
-		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
-			OpenPCKFileDialog();
-		}
-		else if (gCurrentPCK && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gPCKEndianness, gCurrentPCK->getFilePath()); // Save
-		}
-		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gPCKEndianness, "", gCurrentPCK->getFileName()); // Save As
-		}
+		gHasXMLSupport = gCurrentPCK->getXMLSupport();
+		gPCKEndianness = gCurrentPCK->getEndianness();
 	}
+
+	gSelectedNodePath = "";
+	gVisibleNodes.clear();
+	gTreeNodes.clear();
 }
 
-void ResetPreviewWindow()
-{
-	glDeleteTextures(1, &gPreviewTexture.id);
-	gPreviewTexture = {};
-	gLastPreviewedFile = nullptr;
-}
-
-// Handles the menu bar, functions are held in MenuFunctions.h/cpp
 void HandleMenuBar() {
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
@@ -88,10 +84,10 @@ void HandleMenuBar() {
 			if (gCurrentPCK)
 			{
 				if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gCurrentPCK)) {
-					SavePCK(gPCKEndianness, gCurrentPCK->getFilePath());
+					SavePCK(gTreeNodes, gPCKEndianness, gCurrentPCK->getFilePath());
 				}
 				if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gCurrentPCK)) {
-					SavePCK(gPCKEndianness, "", gCurrentPCK->getFileName());
+					SavePCK(gTreeNodes, gPCKEndianness, "", gCurrentPCK->getFileName());
 				}
 			}
 			ImGui::EndMenu();
@@ -122,6 +118,150 @@ void HandleMenuBar() {
 		}
 		ImGui::EndMainMenuBar();
 	}
+}
+
+void HandleInput()
+{
+	// make sure to pass false or else it will trigger multiple times
+	if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+		if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
+			if (FileTreeNode* node = FindNodeByPath(gSelectedNodePath, gTreeNodes))
+			{
+				DeleteNode(*node, gTreeNodes);
+				TreeToPCKFileCollection(gTreeNodes);
+			}
+		}
+		else
+			ShowCancelledMessage();
+	}
+
+	if (ImGui::GetIO().KeyCtrl)
+	{
+		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
+			OpenPCKFileDialog();
+		}
+		else if (gCurrentPCK && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+			SavePCK(gTreeNodes, gPCKEndianness, gCurrentPCK->getFilePath()); // Save
+		}
+		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+			SavePCK(gTreeNodes, gPCKEndianness, "", gCurrentPCK->getFileName()); // Save As
+		}
+	}
+}
+
+void ShowSuccessMessage()
+{
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Success", "Operation performed successfully.", GetWindow());
+}
+
+void ShowCancelledMessage()
+{
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Cancelled", "User aborted operation.", GetWindow());
+}
+
+static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons)
+{
+	static SDL_MessageBoxData messageboxdata = {};
+	messageboxdata.flags = SDL_MESSAGEBOX_WARNING | SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT;
+	messageboxdata.title = title;
+	messageboxdata.message = message;
+	messageboxdata.numbuttons = numButtons;
+	messageboxdata.buttons = buttons;
+	messageboxdata.window = GetWindow();
+
+	int buttonID = -1;
+	if (SDL_ShowMessageBox(&messageboxdata, &buttonID)) {
+		return buttonID; // return the button ID user clicked
+	}
+	else {
+		SDL_Log("Failed to show message box: %s", SDL_GetError());
+		return -1; // indicate error
+	}
+}
+
+static bool ShowYesNoMessagePrompt(const char* title, const char* message)
+{
+	const static SDL_MessageBoxButtonData buttons[] = {
+		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes" },
+		{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No" }
+	};
+
+	return ShowMessagePrompt(title, message, buttons, SDL_arraysize(buttons)) == 1;
+}
+
+void ResetPreviewWindow()
+{
+	glDeleteTextures(1, &gPreviewTexture.id);
+	gPreviewTexture = {};
+	gLastPreviewedFile = nullptr;
+}
+
+// Renders and handles window to preview the currently selected file if any data is previewable
+static void HandlePreviewWindow(const PCKAssetFile& file) {
+	static bool zoomChanged = false;
+	static float userZoom = 1.0f;
+
+	// if ID is valid AND last file is not the current file
+	if (gPreviewTexture.id != 0 && gLastPreviewedFile != &file) {
+		ResetPreviewWindow();
+		zoomChanged = false;
+		userZoom = 1.0f;
+	}
+
+	if (gLastPreviewedFile != &file) {
+		gPreviewTexture = LoadTextureFromMemory(file.getData().data(), file.getFileSize());
+		gLastPreviewedFile = &file;
+		gPreviewTitle = file.getPath() + " (" + std::to_string(gPreviewTexture.width) + "x" + std::to_string(gPreviewTexture.height) + ")###Preview";
+
+		userZoom = 1.0f;
+		zoomChanged = false;
+	}
+
+	if (gPreviewTexture.id == 0) return;
+
+	float previewPosX = ImGui::GetIO().DisplaySize.x * 0.25f;
+	ImVec2 previewWindowSize(ImGui::GetIO().DisplaySize.x * 0.75f, ImGui::GetIO().DisplaySize.y - (ImGui::GetIO().DisplaySize.y * 0.35f));
+	ImGui::SetNextWindowPos(ImVec2(previewPosX, ImGui::GetFrameHeight()), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(previewWindowSize, ImGuiCond_Always);
+
+	ImGui::Begin(gPreviewTitle.c_str(), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
+		ImGuiWindowFlags_HorizontalScrollbar);
+	ImGui::BeginChild("PreviewScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+	if (ImGui::IsWindowHovered() && ImGui::GetIO().KeyCtrl && ImGui::GetIO().MouseWheel != 0.0f) {
+		float zoomDelta = ImGui::GetIO().MouseWheel * 0.1f;
+		userZoom = std::clamp(userZoom * (1.0f + zoomDelta), 0.5f, 100.0f); // this clamp is a little weird but it works lol
+		zoomChanged = true;
+	}
+
+	ImVec2 availSize = ImGui::GetContentRegionAvail();
+
+	if (!zoomChanged && userZoom == 1.0f) {
+		userZoom = std::min(
+			(availSize.x) / gPreviewTexture.width,
+			(availSize.y) / gPreviewTexture.height
+		);
+	}
+
+	ImVec2 imageSize = ImVec2(gPreviewTexture.width * userZoom, gPreviewTexture.height * userZoom);
+
+	ImVec2 cursorPos = ImGui::GetCursorPos();
+	if (imageSize.x < availSize.x) cursorPos.x += (availSize.x - imageSize.x) / 2.0f;
+	if (imageSize.y < availSize.y) cursorPos.y += (availSize.y - imageSize.y) / 2.0f;
+	ImGui::SetCursorPos(cursorPos);
+	ImGui::Image((ImTextureID)(intptr_t)gPreviewTexture.id, imageSize);
+
+	std::stringstream ss;
+	ss << "Zoom: " << std::fixed << std::setprecision(1) << (userZoom) << "%";
+	std::string zoomText = ss.str();
+	ImVec2 textSize = ImGui::CalcTextSize(zoomText.c_str());
+	ImVec2 textPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x - textSize.x - 20, ImGui::GetWindowPos().y);
+	ImGui::SetCursorScreenPos(textPos);
+	ImGui::TextUnformatted(zoomText.c_str());
+
+	ImGui::EndChild();
+	ImGui::End();
 }
 
 static void HandlePropertiesContextWindow(PCKAssetFile& file, int propertyIndex = -1)
@@ -243,149 +383,6 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 	}
 
 	ImGui::End();
-}
-
-// Renders and handles window to preview the currently selected file if any data is previewable
-static void HandlePreviewWindow(const PCKAssetFile& file) {
-	static bool zoomChanged = false;
-	static float userZoom = 1.0f;
-
-	// if ID is valid AND last file is not the current file
-	if (gPreviewTexture.id != 0 && gLastPreviewedFile != &file) {
-		ResetPreviewWindow();
-		zoomChanged = false;
-		userZoom = 1.0f;
-	}
-
-	if (gLastPreviewedFile != &file) {
-		gPreviewTexture = LoadTextureFromMemory(file.getData().data(), file.getFileSize());
-		gLastPreviewedFile = &file;
-		gPreviewTitle = file.getPath() + " (" + std::to_string(gPreviewTexture.width) + "x" + std::to_string(gPreviewTexture.height) + ")###Preview";
-
-		userZoom = 1.0f;
-		zoomChanged = false;
-	}
-
-	if (gPreviewTexture.id == 0) return;
-
-	float previewPosX = ImGui::GetIO().DisplaySize.x * 0.25f;
-	ImVec2 previewWindowSize(ImGui::GetIO().DisplaySize.x * 0.75f, ImGui::GetIO().DisplaySize.y - (ImGui::GetIO().DisplaySize.y * 0.35f));
-	ImGui::SetNextWindowPos(ImVec2(previewPosX, ImGui::GetFrameHeight()), ImGuiCond_Always);
-	ImGui::SetNextWindowSize(previewWindowSize, ImGuiCond_Always);
-
-	ImGui::Begin(gPreviewTitle.c_str(), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
-		ImGuiWindowFlags_HorizontalScrollbar);
-	ImGui::BeginChild("PreviewScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
-
-	if (ImGui::IsWindowHovered() && ImGui::GetIO().KeyCtrl && ImGui::GetIO().MouseWheel != 0.0f) {
-		float zoomDelta = ImGui::GetIO().MouseWheel * 0.1f;
-		userZoom = std::clamp(userZoom * (1.0f + zoomDelta), 0.5f, 100.0f); // this clamp is a little weird but it works lol
-		zoomChanged = true;
-	}
-
-	ImVec2 availSize = ImGui::GetContentRegionAvail();
-
-	if (!zoomChanged && userZoom == 1.0f) {
-		userZoom = std::min(
-			(availSize.x) / gPreviewTexture.width,
-			(availSize.y) / gPreviewTexture.height
-		);
-	}
-
-	ImVec2 imageSize = ImVec2(gPreviewTexture.width * userZoom, gPreviewTexture.height * userZoom);
-
-	ImVec2 cursorPos = ImGui::GetCursorPos();
-	if (imageSize.x < availSize.x) cursorPos.x += (availSize.x - imageSize.x) / 2.0f;
-	if (imageSize.y < availSize.y) cursorPos.y += (availSize.y - imageSize.y) / 2.0f;
-	ImGui::SetCursorPos(cursorPos);
-	ImGui::Image((ImTextureID)(intptr_t)gPreviewTexture.id, imageSize);
-
-	std::stringstream ss;
-	ss << "Zoom: " << std::fixed << std::setprecision(1) << (userZoom) << "%";
-	std::string zoomText = ss.str();
-	ImVec2 textSize = ImGui::CalcTextSize(zoomText.c_str());
-	ImVec2 textPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x - textSize.x - 20, ImGui::GetWindowPos().y);
-	ImGui::SetCursorScreenPos(textPos);
-	ImGui::TextUnformatted(zoomText.c_str());
-
-	ImGui::EndChild();
-	ImGui::End();
-}
-
-static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons)
-{
-	static SDL_MessageBoxData messageboxdata = {};
-	messageboxdata.flags = SDL_MESSAGEBOX_WARNING | SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT;
-	messageboxdata.title = title;
-	messageboxdata.message = message;
-	messageboxdata.numbuttons = numButtons;
-	messageboxdata.buttons = buttons;
-	messageboxdata.window = GetWindow();
-
-	int buttonID = -1;
-	if (SDL_ShowMessageBox(&messageboxdata, &buttonID)) {
-		return buttonID; // return the button ID user clicked
-	}
-	else {
-		SDL_Log("Failed to show message box: %s", SDL_GetError());
-		return -1; // indicate error
-	}
-}
-
-static bool ShowYesNoMessagePrompt(const char* title, const char* message)
-{
-	const static SDL_MessageBoxButtonData buttons[] = {
-		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes" },
-		{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No" }
-	};
-
-	return ShowMessagePrompt(title, message, buttons, SDL_arraysize(buttons)) == 1;
-}
-
-static void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties = false)
-{
-	std::string targetDir = IO::ChooseFolderDialog(GetWindow(), "Choose Output Directory");
-	if (targetDir.empty())
-	{
-		ShowCancelledMessage();
-		return;
-	}
-
-	try {
-		std::function<void(const FileTreeNode&, const std::string&)> saveRecursive =
-			[&](const FileTreeNode& n, const std::string& currentPath)
-			{
-				if (!n.file)
-				{
-					std::string folderPath = currentPath + "/" + n.path;
-					std::filesystem::create_directories(folderPath);
-
-					for (const auto& child : n.children)
-						saveRecursive(child, folderPath);
-				}
-				else
-				{
-					std::string fileName = std::filesystem::path(n.path).filename().string();
-					std::string filePath = currentPath + "/" + fileName;
-
-					std::ofstream outFile(filePath, std::ios::binary);
-					if (outFile)
-						outFile.write(reinterpret_cast<const char*>(n.file->getData().data()), n.file->getFileSize());
-
-					if (outFile.good() && includeProperties)
-					{
-						SaveFilePropertiesToFile(*n.file, filePath + ".txt");
-					}
-				}
-			};
-
-		saveRecursive(node, targetDir);
-	}
-	catch (...)
-	{
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", SDL_GetError(), GetWindow());
-	}
 }
 
 static void HandlePCKNodeContextMenu(FileTreeNode& node)
@@ -554,7 +551,7 @@ static void RenderFileTree() {
 
 		FileTreeNode* selectedNode = FindNodeByPath(gSelectedNodePath, gTreeNodes);
 
-		if(selectedNode && selectedNode->file)
+		if (selectedNode && selectedNode->file)
 			selectedFile = selectedNode->file;
 
 		if (selectedFile) break;
@@ -577,59 +574,4 @@ static void RenderFileTree() {
 void HandleFileTree() {
 	BuildFileTree(gTreeNodes);
 	RenderFileTree();
-}
-
-void UISetup() {
-	gFolderIcon = LoadTextureFromFile("assets/icons/NODE_FOLDER.png", GL_LINEAR_MIPMAP_LINEAR);
-	for (int i = 0; i < (int)PCKAssetFile::Type::PCK_ASSET_TYPES_TOTAL; i++) {
-		auto type = static_cast<PCKAssetFile::Type>(i);
-		std::string name = (type == PCKAssetFile::Type::UI_DATA)
-			? PCKAssetFile::getAssetTypeString(PCKAssetFile::Type::PCK_ASSET_TYPES_TOTAL)
-			: PCKAssetFile::getAssetTypeString(type);
-		std::string path = "assets/icons/FILE_" + name + ".png";
-		gFileIcons[type] = LoadTextureFromFile(path, GL_LINEAR_MIPMAP_LINEAR);
-	}
-
-	ImGuiStyle& style = ImGui::GetStyle();
-	style.CellPadding = ImVec2(0, 0);
-
-	ImFontConfig config;
-	config.MergeMode = false;
-	config.PixelSnapH = true;
-
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/m6x11plus.ttf", 18.0f, &config);
-
-	config.MergeMode = true;
-
-	// Merge Chinese (Simplified)
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
-	// Merge Chinese (Traditional)
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
-	// Merge Japanese
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
-	// Merge Korean
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesKorean());
-
-	ImGui::GetIO().Fonts->Build();
-}
-
-void ResetUIData(const std::string& filePath) {
-
-	if (gCurrentPCK)
-	{
-		gHasXMLSupport = gCurrentPCK->getXMLSupport();
-		gPCKEndianness = gCurrentPCK->getEndianness();
-	}
-
-	gSelectedNodePath = "";
-	gVisibleNodes.clear();
-	gTreeNodes.clear();
-}
-
-void UICleanup() {
-	ResetUIData();
-	for (auto& [type, tex] : gFileIcons)
-		if (tex.id != 0)
-			glDeleteTextures(1, &tex.id);
-	gFileIcons.clear();
 }

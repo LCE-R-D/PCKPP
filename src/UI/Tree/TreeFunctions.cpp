@@ -145,3 +145,60 @@ void ScrollToNode(bool& keyScrolled)
 
 	keyScrolled = false;
 }
+
+void SavePCK(std::vector<FileTreeNode> nodes, IO::Endianness endianness, const std::string& path, const std::string& defaultName)
+{
+	TreeToPCKFileCollection(nodes);
+
+	if (!path.empty()) {
+		SavePCKFile(path, endianness);
+	}
+	else {
+		SavePCKFileDialog(endianness, defaultName);
+	}
+}
+
+void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties)
+{
+	std::string targetDir = IO::ChooseFolderDialog(GetWindow(), "Choose Output Directory");
+	if (targetDir.empty())
+	{
+		ShowCancelledMessage();
+		return;
+	}
+
+	try {
+		std::function<void(const FileTreeNode&, const std::string&)> saveRecursive =
+			[&](const FileTreeNode& n, const std::string& currentPath)
+			{
+				if (!n.file)
+				{
+					std::string folderPath = currentPath + "/" + n.path;
+					std::filesystem::create_directories(folderPath);
+
+					for (const auto& child : n.children)
+						saveRecursive(child, folderPath);
+				}
+				else
+				{
+					std::string fileName = std::filesystem::path(n.path).filename().string();
+					std::string filePath = currentPath + "/" + fileName;
+
+					std::ofstream outFile(filePath, std::ios::binary);
+					if (outFile)
+						outFile.write(reinterpret_cast<const char*>(n.file->getData().data()), n.file->getFileSize());
+
+					if (outFile.good() && includeProperties)
+					{
+						SaveFilePropertiesToFile(*n.file, filePath + ".txt");
+					}
+				}
+			};
+
+		saveRecursive(node, targetDir);
+	}
+	catch (...)
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", SDL_GetError(), GetWindow());
+	}
+}
