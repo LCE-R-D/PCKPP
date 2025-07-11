@@ -15,8 +15,6 @@ static const PCKAssetFile* gLastPreviewedFile = nullptr;
 // Instance globals
 PCKFile* gCurrentPCK{ nullptr };
 static std::string gSelectedNodePath;
-static bool gShouldOpenFolder{ false };
-static bool gShouldCloseFolder{false};
 static bool gHasXMLSupport{ false };
 static IO::Endianness gPCKEndianness{ IO::Endianness::LITTLE };
 
@@ -454,7 +452,7 @@ bool IsClicked()
 }
 
 // Renders the passed node, also handles children or the node
-static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr, bool shouldScroll = false) {
+static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr, bool shouldScroll = false, bool openFolder = false, bool closeFolder = false) {
 	if (visibleList)
 		visibleList->push_back(&node); // adds node to visible nodes vector, but only when needed
 
@@ -472,11 +470,12 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 		ImGui::PushID(node.path.c_str());
 		ImGui::Image((void*)(intptr_t)gFolderIcon.id, ImVec2(48, 48));
 		ImGui::SameLine();
-		if (node.path == gSelectedNodePath) {
-			if (gShouldOpenFolder) ImGui::SetNextItemOpen(true, ImGuiCond_Always);
-			else if (gShouldCloseFolder) ImGui::SetNextItemOpen(false, ImGuiCond_Always);
-		}
+
+		if (node.path == gSelectedNodePath && (openFolder || closeFolder))
+			ImGui::SetNextItemOpen(openFolder, ImGuiCond_Always);
+
 		bool open = ImGui::TreeNodeEx(node.path.c_str(), flags);
+
 		if (IsClicked())
 			gSelectedNodePath = node.path;
 
@@ -484,7 +483,7 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 
 		if (open) {
 			for (auto& child : node.children)
-				RenderNode(child, visibleList);
+				RenderNode(child, visibleList, shouldScroll, openFolder, closeFolder);
 			ImGui::TreePop();
 		}
 		ImGui::PopID();
@@ -514,15 +513,16 @@ static void RenderFileTree() {
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x * 0.25f, ImGui::GetIO().DisplaySize.y - ImGui::GetFrameHeight()));
 	ImGui::Begin(std::string(gCurrentPCK->getFileName() + "###FileTree").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-	gShouldOpenFolder = false;
-	gShouldCloseFolder = false;
+	bool shouldOpenFolder = false;
+	bool shouldCloseFolder = false;
 
 	if (ImGui::IsWindowFocused() && !gSelectedNodePath.empty()) {
-		if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) gShouldOpenFolder = true;
-		else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) gShouldCloseFolder = true;
+		shouldOpenFolder = ImGui::IsKeyPressed(ImGuiKey_RightArrow);
+		shouldCloseFolder = !shouldOpenFolder && ImGui::IsKeyPressed(ImGuiKey_LeftArrow);
 	}
 
-	for (auto& node : gTreeNodes) RenderNode(node, &gVisibleNodes);
+	for (auto& node : gTreeNodes)
+		RenderNode(node, &gVisibleNodes, shouldScroll, shouldOpenFolder, shouldCloseFolder);
 
 	static int selectedIndex = -1;
 	if (ImGui::IsWindowFocused() && !gVisibleNodes.empty()) {
@@ -566,8 +566,8 @@ static void RenderFileTree() {
 		HandlePropertiesWindow(*selectedFile);
 	}
 
-	gShouldOpenFolder = false;
-	gShouldCloseFolder = false;
+	shouldOpenFolder = false;
+	shouldCloseFolder = false;
 	ImGui::End();
 }
 
@@ -619,9 +619,6 @@ void ResetUIData(const std::string& filePath) {
 	}
 
 	gSelectedNodePath = "";
-	gShouldOpenFolder = false;
-	gShouldCloseFolder = false;
-
 	gVisibleNodes.clear();
 	gTreeNodes.clear();
 }
