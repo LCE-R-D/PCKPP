@@ -1,10 +1,5 @@
 ﻿#include "UI.h"
-
-struct FileTreeNode {
-	std::string path{};
-	PCKAssetFile* file{ nullptr }; // folder by default
-	std::vector<FileTreeNode> children;
-};
+#include "Tree/TreeFunctions.h"
 
 // Resource globals
 std::map<PCKAssetFile::Type, Texture> gFileIcons;
@@ -44,46 +39,9 @@ void ShowCancelledMessage()
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Cancelled", "User aborted operation.", GetWindow());
 }
 
-void TreeToPCKFiles()
-{
-	if (!gCurrentPCK)
-		return;
-
-	std::vector<PCKAssetFile> files;
-
-	std::function<void(const FileTreeNode&)> collect = [&](const FileTreeNode& node) {
-		if (node.file)
-			files.push_back(*node.file);
-
-		for (const auto& child : node.children)
-			collect(child);
-		};
-
-	// First collect root files
-	for (const auto& node : gTreeNodes)
-	{
-		if (node.file)
-			collect(node);
-	}
-
-	// Then collect from folders
-	for (const auto& node : gTreeNodes)
-	{
-		if (!node.file)
-			collect(node);
-	}
-
-	gCurrentPCK->clearFiles();
-
-	for (const auto& f : files)
-		gCurrentPCK->addFile(&f);
-
-	files.clear();
-}
-
 static void SavePCK(IO::Endianness endianness, const std::string& path = "", const std::string& defaultName = "")
 {
-	TreeToPCKFiles();
+	TreeToPCKFileCollection(gTreeNodes);
 
 	if (!path.empty()) {
 		SavePCKFile(path, endianness);
@@ -93,44 +51,16 @@ static void SavePCK(IO::Endianness endianness, const std::string& path = "", con
 	}
 }
 
-FileTreeNode* FindNodeByPath(const std::string& path, std::vector<FileTreeNode>& nodes = gTreeNodes)
-{
-	for (auto& node : nodes)
-	{
-		if (node.path == path)
-			return &node;
-
-		if (FileTreeNode* found = FindNodeByPath(path, node.children))
-			return found;
-	}
-	return nullptr;
-}
-
-void DeleteNode(FileTreeNode& targetNode, std::vector<FileTreeNode>& nodes = gTreeNodes)
-{
-	auto it = std::find_if(nodes.begin(), nodes.end(), [&](const FileTreeNode& n) {
-		return &n == &targetNode;
-		});
-
-	if (it != nodes.end())
-	{
-		nodes.erase(it);
-		TreeToPCKFiles(); // rebuild tree after deletion
-	}
-
-	for (auto& node : nodes)
-	{
-		DeleteNode(targetNode, node.children);
-	}
-}
-
 void HandleInput()
 {
 	// make sure to pass false or else it will trigger multiple times
 	if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
 		if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
-			if (FileTreeNode* node = FindNodeByPath(gSelectedPath))
-				DeleteNode(*node);
+			if (FileTreeNode* node = FindNodeByPath(gSelectedPath, gTreeNodes))
+			{
+				DeleteNode(*node, gTreeNodes);
+				TreeToPCKFileCollection(gTreeNodes);
+			}
 		}
 		else
 			ShowCancelledMessage();
@@ -200,65 +130,6 @@ void HandleMenuBar() {
 		gMainMenuBarHeight = ImGui::GetFrameHeight();
 		ImGui::EndMainMenuBar();
 	}
-}
-
-// Sorts the file tree; First by folders, then by files; folders are sorted alphabetically, and files are not sorted at all
-static void SortTree(FileTreeNode& node) {
-	std::stable_sort(node.children.begin(), node.children.end(), [](const FileTreeNode& a, const FileTreeNode& b) {
-		if (!a.file && b.file) return true;
-		if (a.file && !b.file) return false;
-		if (!a.file && !b.file) return a.path < b.path;
-		return false;
-		});
-	for (auto& child : node.children)
-		if (!child.file)
-			SortTree(child);
-}
-
-// Builds the file tree
-static void BuildFileTree() {
-	if (!gCurrentPCK) return;
-	gTreeNodes.clear();
-
-	FileTreeNode root;
-	auto& files = gCurrentPCK->getFiles();
-
-	for (const auto& file : files) {
-		std::string fullPath = file.getPath();
-		size_t slashPos = fullPath.find_last_of("/\\");
-		std::string folderName = (slashPos != std::string::npos) ? fullPath.substr(0, slashPos) : "";
-
-		std::vector<std::string> parts;
-		size_t start = 0;
-		while (true) {
-			size_t pos = folderName.find_first_of("/\\", start);
-			if (pos == std::string::npos) {
-				parts.push_back(folderName.substr(start));
-				break;
-			}
-			parts.push_back(folderName.substr(start, pos - start));
-			start = pos + 1;
-		}
-
-		FileTreeNode* current = &root;
-		for (const auto& part : parts) {
-			if (part.empty()) continue;
-			auto it = std::find_if(current->children.begin(), current->children.end(), [&](const FileTreeNode& n) {
-				return !n.file && n.path == part;
-				});
-			if (it == current->children.end()) {
-				current->children.push_back(FileTreeNode{ part, nullptr });
-				current = &current->children.back();
-			}
-			else {
-				current = &(*it);
-			}
-		}
-		current->children.push_back(FileTreeNode{ file.getPath(), const_cast<PCKAssetFile*>(&file) });
-	}
-
-	SortTree(root);
-	gTreeNodes = std::move(root.children);
 }
 
 static void HandlePropertiesContextWindow(PCKAssetFile& file, int propertyIndex = -1)
@@ -594,7 +465,8 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 		if (ImGui::MenuItem("Delete")) {
 			if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too."))
 			{
-				DeleteNode(node);
+				DeleteNode(node, gTreeNodes);
+				TreeToPCKFileCollection(gTreeNodes);
 			}
 			else
 				ShowCancelledMessage();
@@ -733,7 +605,7 @@ static void RenderFileTree() {
 }
 
 void HandleFileTree() {
-	BuildFileTree();
+	BuildFileTree(gTreeNodes);
 	RenderFileTree();
 }
 
