@@ -831,7 +831,6 @@ void UISetup() {
 	style.CellPadding = ImVec2(0, 0);
 
 	io = &ImGui::GetIO();
-	io->FontAllowUserScaling = true;
 
 	ImFontConfig config;
 	config.MergeMode = false;
