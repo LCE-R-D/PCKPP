@@ -51,8 +51,11 @@ void SavePCKFileDialog(IO::Endianness endianness, const std::string& defaultName
 
 	std::string filePath = IO::SaveFileDialog(GetWindow(), pckFilter, defaultName);
 
-	if(!filePath.empty())
+	if (!filePath.empty())
+	{
 		SavePCKFile(filePath, endianness);
+		currentPCKFile->setFilePath(filePath); // update to save as location
+	}
 	else
 		ShowCancelledMessage();
 }

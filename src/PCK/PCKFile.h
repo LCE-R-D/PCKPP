@@ -42,9 +42,11 @@ public:
 
 	void setXMLSupport(bool value);
 
-	std::string& getFileName() const;
+	std::string getFileName() const;
 
-	std::string& getFilePath() const;
+	std::string getFilePath() const;
+
+	void setFilePath(const std::string& pathin);
 
 private:
 	IO::Endianness mEndianess{ IO::Endianness::LITTLE };
