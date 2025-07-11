@@ -14,17 +14,12 @@ static const PCKAssetFile* gLastPreviewedFile = nullptr;
 
 // Instance globals
 PCKFile* gCurrentPCK{ nullptr };
-static std::string gCurrentPCKFilePath;
-static std::string gCurrentPCKFileName;
-static std::string gSelectedPath;
-static bool gKeyboardScrolled{ false };
+static std::string gSelectedNodePath;
 ImGuiIO* io{ nullptr };
-float gMainMenuBarHeight{ 24.0f };
 static bool gShouldOpenFolder{ false };
 static bool gShouldCloseFolder{false};
 static bool gHasXMLSupport{ false };
 static IO::Endianness gPCKEndianness{ IO::Endianness::LITTLE };
-static int gSelectedPropertyIndex = -1;
 
 PCKFile*& GetCurrentPCKFile() { return gCurrentPCK; }
 ImGuiIO*& GetImGuiIO() { return io; }
@@ -56,7 +51,7 @@ void HandleInput()
 	// make sure to pass false or else it will trigger multiple times
 	if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
 		if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
-			if (FileTreeNode* node = FindNodeByPath(gSelectedPath, gTreeNodes))
+			if (FileTreeNode* node = FindNodeByPath(gSelectedNodePath, gTreeNodes))
 			{
 				DeleteNode(*node, gTreeNodes);
 				TreeToPCKFileCollection(gTreeNodes);
@@ -72,10 +67,10 @@ void HandleInput()
 			OpenPCKFileDialog();
 		}
 		else if (gCurrentPCK && io->KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gPCKEndianness, gCurrentPCKFilePath); // Save
+			SavePCK(gPCKEndianness, gCurrentPCK->getFilePath()); // Save
 		}
 		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gPCKEndianness, "", gCurrentPCKFileName); // Save As
+			SavePCK(gPCKEndianness, "", gCurrentPCK->getFileName()); // Save As
 		}
 	}
 }
@@ -95,10 +90,10 @@ void HandleMenuBar() {
 				OpenPCKFileDialog();
 			}
 			if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gCurrentPCK)) {
-				SavePCK(gPCKEndianness, gCurrentPCKFilePath);
+				SavePCK(gPCKEndianness, gCurrentPCK->getFilePath());
 			}
 			if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gCurrentPCK)) {
-				SavePCK(gPCKEndianness, "", gCurrentPCKFileName);
+				SavePCK(gPCKEndianness, "", gCurrentPCK->getFileName());
 			}
 			ImGui::EndMenu();
 		}
@@ -126,8 +121,6 @@ void HandleMenuBar() {
 				ImGui::EndMenu();
 			}
 		}
-
-		gMainMenuBarHeight = ImGui::GetFrameHeight();
 		ImGui::EndMainMenuBar();
 	}
 }
@@ -157,7 +150,7 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 	const auto properties = file.getProperties(); // make a copy of properties
 
 	float propertyWindowPosX = io->DisplaySize.x * 0.25f;
-	float propertyWindowHeight = (io->DisplaySize.y * 0.35f) - gMainMenuBarHeight;
+	float propertyWindowHeight = (io->DisplaySize.y * 0.35f) - ImGui::GetFrameHeight();
 	ImVec2 propertyWindowSize(io->DisplaySize.x * 0.75f, propertyWindowHeight);
 	ImGui::SetNextWindowSize(propertyWindowSize, ImGuiCond_Always);
 	ImGui::SetNextWindowPos(ImVec2(propertyWindowPosX, io->DisplaySize.y - propertyWindowHeight), ImGuiCond_Always);
@@ -278,7 +271,7 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 
 	float previewPosX = io->DisplaySize.x * 0.25f;
 	ImVec2 previewWindowSize(io->DisplaySize.x * 0.75f, io->DisplaySize.y - (io->DisplaySize.y * 0.35f));
-	ImGui::SetNextWindowPos(ImVec2(previewPosX, gMainMenuBarHeight), ImGuiCond_Always);
+	ImGui::SetNextWindowPos(ImVec2(previewPosX, ImGui::GetFrameHeight()), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(previewWindowSize, ImGuiCond_Always);
 
 	ImGui::Begin(gPreviewTitle.c_str(), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
@@ -463,31 +456,31 @@ bool IsClicked()
 }
 
 // Renders the passed node, also handles children or the node
-static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr) {
+static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr, bool shouldScroll = false) {
 	if (visibleList)
 		visibleList->push_back(&node); // adds node to visible nodes vector, but only when needed
 
 	bool isFolder = (node.file == nullptr);
-	bool isSelected = (node.path == gSelectedPath);
+	bool isSelected = (node.path == gSelectedNodePath);
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
 	if (isSelected)
 	{
 		flags |= ImGuiTreeNodeFlags_Selected;
-		ScrollToNode(gKeyboardScrolled);
+		ScrollToNode(shouldScroll);
 	}
 
 	if (isFolder) {
 		ImGui::PushID(node.path.c_str());
 		ImGui::Image((void*)(intptr_t)gFolderIcon.id, ImVec2(48, 48));
 		ImGui::SameLine();
-		if (node.path == gSelectedPath) {
+		if (node.path == gSelectedNodePath) {
 			if (gShouldOpenFolder) ImGui::SetNextItemOpen(true, ImGuiCond_Always);
 			else if (gShouldCloseFolder) ImGui::SetNextItemOpen(false, ImGuiCond_Always);
 		}
 		bool open = ImGui::TreeNodeEx(node.path.c_str(), flags);
 		if (IsClicked())
-			gSelectedPath = node.path;
+			gSelectedNodePath = node.path;
 
 		HandlePCKNodeContextMenu(node);
 
@@ -503,10 +496,10 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 		ImGui::Image((void*)(intptr_t)gFileIcons[file.getAssetType()].id, ImVec2(48, 48));
 		ImGui::SameLine();
 		if (ImGui::Selectable((std::filesystem::path(file.getPath()).filename().string() + "###" + file.getPath()).c_str(), isSelected))
-			gSelectedPath = node.path;
+			gSelectedNodePath = node.path;
 
 		if (IsClicked())
-			gSelectedPath = node.path;
+			gSelectedNodePath = node.path;
 
 		HandlePCKNodeContextMenu(node);
 	}
@@ -516,15 +509,17 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 static void RenderFileTree() {
 	if (!gCurrentPCK) return;
 
+	bool shouldScroll = false;
+
 	gVisibleNodes.clear();
-	ImGui::SetNextWindowPos(ImVec2(0, gMainMenuBarHeight));
-	ImGui::SetNextWindowSize(ImVec2(io->DisplaySize.x * 0.25f, io->DisplaySize.y - gMainMenuBarHeight));
-	ImGui::Begin(std::string(gCurrentPCKFileName + "###FileTree").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+	ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetFrameHeight()));
+	ImGui::SetNextWindowSize(ImVec2(io->DisplaySize.x * 0.25f, io->DisplaySize.y - ImGui::GetFrameHeight()));
+	ImGui::Begin(std::string(gCurrentPCK->getFileName() + "###FileTree").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
 	gShouldOpenFolder = false;
 	gShouldCloseFolder = false;
 
-	if (ImGui::IsWindowFocused() && !gSelectedPath.empty()) {
+	if (ImGui::IsWindowFocused() && !gSelectedNodePath.empty()) {
 		if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) gShouldOpenFolder = true;
 		else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) gShouldCloseFolder = true;
 	}
@@ -534,29 +529,29 @@ static void RenderFileTree() {
 	static int selectedIndex = -1;
 	if (ImGui::IsWindowFocused() && !gVisibleNodes.empty()) {
 		for (int i = 0; i < (int)gVisibleNodes.size(); ++i) {
-			if (gVisibleNodes[i]->path == gSelectedPath) {
+			if (gVisibleNodes[i]->path == gSelectedNodePath) {
 				selectedIndex = i;
 				break;
 			}
 		}
 
-		std::string previousPath = gSelectedPath;
+		std::string previousPath = gSelectedNodePath;
 		if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
 			selectedIndex = std::max(0, selectedIndex - 1);
-			gSelectedPath = gVisibleNodes[selectedIndex]->path;
+			gSelectedNodePath = gVisibleNodes[selectedIndex]->path;
 		}
 		else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
 			selectedIndex = std::min((int)gVisibleNodes.size() - 1, selectedIndex + 1);
-			gSelectedPath = gVisibleNodes[selectedIndex]->path;
+			gSelectedNodePath = gVisibleNodes[selectedIndex]->path;
 		}
-		if (gSelectedPath != previousPath)
-			gKeyboardScrolled = true;
+		if (gSelectedNodePath != previousPath)
+			shouldScroll = true;
 	}
 
 	const PCKAssetFile* selectedFile = nullptr;
 	for (const auto& _ : gTreeNodes) {
 
-		FileTreeNode* selectedNode = FindNodeByPath(gSelectedPath, gTreeNodes);
+		FileTreeNode* selectedNode = FindNodeByPath(gSelectedNodePath, gTreeNodes);
 
 		if(selectedNode && selectedNode->file)
 			selectedFile = selectedNode->file;
@@ -627,11 +622,7 @@ void ResetUIData(const std::string& filePath) {
 		gPCKEndianness = gCurrentPCK->getEndianness();
 	}
 
-	gSelectedPropertyIndex = -1;
-	gSelectedPath = "";
-	gCurrentPCKFilePath = filePath.empty() ? "" : filePath;
-	gCurrentPCKFileName = filePath.empty() ? "" : std::filesystem::path(filePath).filename().string();
-	gKeyboardScrolled = false;
+	gSelectedNodePath = "";
 	gShouldOpenFolder = false;
 	gShouldCloseFolder = false;
 
