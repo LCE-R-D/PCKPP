@@ -147,7 +147,7 @@ static void OpenFileDialogCallback(void*, const char* const* filelist, int)
 	gConditionVariable.notify_one();
 }
 
-std::string IO::OpenFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters)
+std::string IO::OpenFileDialog(SDL_Window* window, const SDL_DialogFileFilter* filters)
 {
 	gDialogFinished = false;
 	gSelectedFile.clear();
@@ -172,7 +172,7 @@ std::string IO::OpenFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters
 }
 
 // Gets output path
-std::string IO::SaveFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters, const std::string& defaultName)
+std::string IO::SaveFileDialog(SDL_Window* window, const SDL_DialogFileFilter* filters, const std::string& defaultName)
 {
 	gDialogFinished = false;
 	gSelectedFile.clear();

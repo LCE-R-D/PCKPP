@@ -36,10 +36,10 @@ namespace IO
 	std::u16string ToUTF16(const std::string& str);
 
 	// For getting the path for opening files with SDL's file system
-	std::string OpenFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters);
+	std::string OpenFileDialog(SDL_Window* window, const SDL_DialogFileFilter* filters);
 
 	// For getting the path for saving files with SDL's file system
-	std::string SaveFileDialog(SDL_Window* window, SDL_DialogFileFilter* filters, const std::string& defaultName);
+	std::string SaveFileDialog(SDL_Window* window, const SDL_DialogFileFilter* filters, const std::string& defaultName);
 
 	// For saving files with SDL's file system AND writing with support for Properties
 	std::string SaveFileDialogWithProperties(SDL_Window* window, SDL_DialogFileFilter* filters, const std::vector<unsigned char>& fileData, const std::string& defaultName, bool ignoreExt = false, const std::vector<PCKAssetFile::Property>& properties = {});
