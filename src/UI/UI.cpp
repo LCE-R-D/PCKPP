@@ -85,11 +85,14 @@ void HandleMenuBar() {
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
 				OpenPCKFileDialog();
 			}
-			if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gCurrentPCK)) {
-				SavePCK(gPCKEndianness, gCurrentPCK->getFilePath());
-			}
-			if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gCurrentPCK)) {
-				SavePCK(gPCKEndianness, "", gCurrentPCK->getFileName());
+			if (gCurrentPCK)
+			{
+				if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gCurrentPCK)) {
+					SavePCK(gPCKEndianness, gCurrentPCK->getFilePath());
+				}
+				if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gCurrentPCK)) {
+					SavePCK(gPCKEndianness, "", gCurrentPCK->getFileName());
+				}
 			}
 			ImGui::EndMenu();
 		}
