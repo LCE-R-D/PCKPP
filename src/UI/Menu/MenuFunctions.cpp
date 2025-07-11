@@ -45,7 +45,7 @@ void OpenPCKFileDialog()
 		ShowCancelledMessage();
 }
 
-void SavePCKFileAs(IO::Endianness endianness, const std::string& defaultName)
+void SavePCKFileDialog(IO::Endianness endianness, const std::string& defaultName)
 {
 	PCKFile*& currentPCKFile = GetCurrentPCKFile();
 
@@ -73,7 +73,7 @@ void SavePCKFile(const std::string& outpath, IO::Endianness endianness)
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Saved", "File successfully saved!", GetWindow());
 }
 
-void SetPropertiesFromFile(PCKAssetFile& file)
+void SetFilePropertiesDialog(PCKAssetFile& file)
 {
 	const static SDL_DialogFileFilter filters[] = {
 	{ "Text File", "txt" },
@@ -223,4 +223,78 @@ bool SetDataFromFile(PCKAssetFile& file)
 	ShowCancelledMessage();
 
 	return false;
+}
+
+void SaveFilePropertiesToFile(const PCKAssetFile& file, const std::string& outpath)
+{
+	if (outpath.empty())
+	{
+		return;
+	}
+
+	std::u16string propertyData;
+	for (const auto& [key, val] : file.getProperties()) {
+		propertyData += IO::ToUTF16(key) + u' ' + val + u'\n';
+	}
+
+	std::ofstream propFile(outpath, std::ios::binary);
+	if (propFile.is_open())
+	{
+		const char* buffer = reinterpret_cast<const char*>(propertyData.data());
+		std::size_t byteCount = propertyData.size() * sizeof(char16_t);
+		propFile.write(buffer, byteCount);
+		propFile.close();
+	}
+}
+
+void SaveFilePropertiesDialog(const PCKAssetFile& file)
+{
+	static const std::string nameStr = "Text File | *.txt";
+	static const std::string patternStr = "txt";
+
+	SDL_DialogFileFilter filter{};
+	filter.name = nameStr.c_str();
+	filter.pattern = patternStr.c_str();
+
+	std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, std::filesystem::path(file.getPath()).filename().string() + ".txt");
+
+	if (!outpath.empty())
+	{
+		SaveFilePropertiesToFile(file, outpath);
+		ShowSuccessMessage();
+	}
+	else
+		ShowCancelledMessage();
+}
+
+void ExtractFileDataDialog(const PCKAssetFile& file, bool includeProperties)
+{
+	std::filesystem::path filePath(file.getPath());
+
+	std::string ext = filePath.extension().string();
+	if (!ext.empty() && ext[0] == '.')
+		ext.erase(0, 1);
+
+	static std::string nameStr;
+	static std::string patternStr;
+
+	nameStr = std::string(file.getAssetTypeString()) + " | *." + ext + " File";
+	patternStr = ext;
+
+	SDL_DialogFileFilter filter{};
+	filter.name = nameStr.c_str();
+	filter.pattern = patternStr.c_str();
+
+	std::string outPath{};
+
+	// this is very dumb and I'll have to give this a rewrite sometime
+	if (includeProperties)
+		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), filePath.filename().string(), true, file.getProperties());
+	else
+		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), filePath.filename().string());
+
+	if (!outPath.empty())
+		ShowSuccessMessage();
+	else
+		ShowCancelledMessage();
 }

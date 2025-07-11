@@ -21,6 +21,12 @@ void ShowSuccessMessage();
 // Instead of writing a 1,000 cancelled messages
 void ShowCancelledMessage();
 
+// A helper function to cut cown on work required to open a message prompt box
+static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons);
+
+// Basically a helper function to do Yes/No prompts using ShowMessagePromptBox
+static bool ShowYesNoMessagePrompt(const char* title, const char* message);
+
 // Handle input for the UI, like keystrokes
 void HandleInput();
 
@@ -38,9 +44,3 @@ void UISetup();
 
 // Cleanup UI related vendors
 void UICleanup();
-
-// A helper function to cut cown on work required
-static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons);
-
-// Basically a helper function to do Yes/No prompts using ShowMessagePromptBox
-static bool ShowYesNoMessagePrompt(const char* title, const char* message);

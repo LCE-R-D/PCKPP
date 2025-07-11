@@ -89,7 +89,7 @@ static void SavePCK(IO::Endianness endianness, const std::string& path = "", con
 		SavePCKFile(path, endianness);
 	}
 	else {
-		SavePCKFileAs(endianness, defaultName);
+		SavePCKFileDialog(endianness, defaultName);
 	}
 }
 
@@ -470,38 +470,6 @@ static void ScrollToNode()
 	gKeyboardScrolled = false;
 }
 
-static void ExtractDataToFile(const PCKAssetFile& file, bool includeProperties = false)
-{
-	std::filesystem::path filePath(file.getPath());
-
-	std::string ext = filePath.extension().string();
-	if (!ext.empty() && ext[0] == '.')
-		ext.erase(0, 1);
-
-	static std::string nameStr;
-	static std::string patternStr;
-
-	nameStr = std::string(file.getAssetTypeString()) + " | *." + ext + " File";
-	patternStr = ext;
-
-	SDL_DialogFileFilter filter{};
-	filter.name = nameStr.c_str();
-	filter.pattern = patternStr.c_str();
-
-	std::string outPath{};
-
-	// this is very dumb and I'll have to give this a rewrite sometime
-	if(includeProperties)
-		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), filePath.filename().string(), true, file.getProperties());
-	else
-		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), filePath.filename().string());
-
-	if (!outPath.empty())
-		ShowSuccessMessage();
-	else
-		ShowCancelledMessage();
-}
-
 static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons)
 {
 	static SDL_MessageBoxData messageboxdata = {};
@@ -530,48 +498,6 @@ static bool ShowYesNoMessagePrompt(const char* title, const char* message)
 	};
 
 	return ShowMessagePrompt(title, message, buttons, SDL_arraysize(buttons)) == 1;
-}
-
-static void SaveFilePropertiesToFile(const PCKAssetFile& file, const std::string& outpath)
-{
-	if (outpath.empty())
-	{
-		return;
-	}
-
-	std::u16string propertyData;
-	for (const auto& [key, val] : file.getProperties()) {
-		propertyData += IO::ToUTF16(key) + u' ' + val + u'\n';
-	}
-
-	std::ofstream propFile(outpath, std::ios::binary);
-	if (propFile.is_open())
-	{
-		const char* buffer = reinterpret_cast<const char*>(propertyData.data());
-		std::size_t byteCount = propertyData.size() * sizeof(char16_t);
-		propFile.write(buffer, byteCount);
-		propFile.close();
-	}
-}
-
-static void SaveFilePropertiesAs(const PCKAssetFile& file)
-{
-	static const std::string nameStr = "Text File | *.txt";
-	static const std::string patternStr = "txt";
-
-	SDL_DialogFileFilter filter{};
-	filter.name = nameStr.c_str();
-	filter.pattern = patternStr.c_str();
-
-	std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, std::filesystem::path(file.getPath()).filename().string() + ".txt");
-
-	if (!outpath.empty())
-	{
-		SaveFilePropertiesToFile(file, outpath);
-		ShowSuccessMessage();
-	}
-	else
-		ShowCancelledMessage();
 }
 
 static void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties = false)
@@ -627,7 +553,7 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 		if (ImGui::BeginMenu("Extract")) {
 			if (isFile && ImGui::MenuItem("File"))
 			{
-				ExtractDataToFile(*node.file);
+				ExtractFileDataDialog(*node.file);
 			}
 			if (!isFile && ImGui::MenuItem("Files"))
 			{
@@ -642,12 +568,12 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 
 			if (isFile && hasProperties && ImGui::MenuItem("Properties"))
 			{
-				SaveFilePropertiesAs(*node.file);
+				SaveFilePropertiesDialog(*node.file);
 			}
 
 			if (isFile && hasProperties && ImGui::MenuItem("File with Properties"))
 			{
-				ExtractDataToFile(*node.file, true);
+				ExtractFileDataDialog(*node.file, true);
 			}
 
 			ImGui::EndMenu();
@@ -661,7 +587,7 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 			}
 			if (ImGui::MenuItem("File Properties"))
 			{
-				SetPropertiesFromFile(*node.file);
+				SetFilePropertiesDialog(*node.file);
 			}
 			ImGui::EndMenu();
 		}
