@@ -12,3 +12,6 @@ void SavePCKFile(const std::string& outpath, IO::Endianness endianness);
 
 // function for saving a PCK File to a specified point on disk
 void SavePCKFileAs(IO::Endianness endianness, const std::string& defaultName);
+
+// function to open a file dialog and read properties into a given file
+void SetPropertiesFromFile(PCKAssetFile& file);

@@ -1,5 +1,6 @@
 #include "MenuFunctions.h"
 #include "../UI.h"
+#include <sstream>
 
 static SDL_DialogFileFilter pckFilter[] = {
 	{ "Minecraft LCE DLC Files (*.pck)", "pck" }
@@ -69,4 +70,113 @@ void SavePCKFile(const std::string& outpath, IO::Endianness endianness)
 	}
 
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Saved", "File successfully saved!", GetWindow());
+}
+
+void SetPropertiesFromFile(PCKAssetFile& file)
+{
+	const static SDL_DialogFileFilter filters[] = {
+	{ "Text File", "txt" },
+	{ "All Files", "*" }
+	};
+
+	std::string inpath = IO::OpenFileDialog(GetWindow(), filters);
+
+	if (!inpath.empty())
+	{
+		std::ifstream in(inpath, std::ios::binary);
+		if (in)
+		{
+			file.clearProperties();
+			IO::TextEncoding encoding = IO::DetectTextEncoding(in);
+
+			std::string key;
+			std::u16string value;
+
+			if (encoding == IO::TextEncoding::UTF8)
+			{
+				// Skip BOM if present
+				char first3[3] = { 0 };
+				in.read(first3, 3);
+				if (!((unsigned char)first3[0] == 0xEF && (unsigned char)first3[1] == 0xBB && (unsigned char)first3[2] == 0xBF))
+					in.seekg(0);
+
+				std::string line;
+				while (std::getline(in, line))
+				{
+					if (line.empty()) continue;
+
+					std::istringstream iss(line);
+					if (!(iss >> key)) continue;
+
+					// Strip trailing colon, if any
+					if (!key.empty() && key.back() == u':')
+						key.pop_back();
+
+					std::string value8;
+					std::getline(iss, value8);
+					value8.erase(0, value8.find_first_not_of(" \t"));
+
+					value = IO::ToUTF16(value8);
+
+					file.addProperty(key, value);
+				}
+			}
+			else if (encoding == IO::TextEncoding::UTF16_LE || encoding == IO::TextEncoding::UTF16_BE)
+			{
+				// Skip BOM (2 bytes)
+				in.seekg(2);
+
+				in.seekg(0, std::ios::end);
+				size_t fileSize = in.tellg();
+				in.seekg(2, std::ios::beg);
+
+				size_t numChars = (fileSize - 2) / 2;
+				std::vector<char16_t> buffer(numChars);
+
+				in.read(reinterpret_cast<char*>(buffer.data()), numChars * 2);
+
+				if (encoding == IO::TextEncoding::UTF16_BE)
+					IO::SwapUTF16Bytes(buffer.data(), numChars);
+
+				size_t start = 0;
+				for (size_t i = 0; i <= numChars; ++i)
+				{
+					if (i == numChars || buffer[i] == u'\n')
+					{
+						std::u16string line(buffer.data() + start, i - start);
+						start = i + 1;
+
+						if (line.empty()) continue;
+						if (!line.empty() && line.back() == u'\r')
+							line.pop_back();
+
+						size_t key_end = 0;
+						while (key_end < line.size() && line[key_end] != u' ' && line[key_end] != u'\t')
+							++key_end;
+
+						std::u16string key16 = line.substr(0, key_end);
+
+						// Strip trailing colon, if any
+						if (!key16.empty() && key16.back() == u':')
+							key16.pop_back();
+						if (key_end < line.size())
+						{
+							value = line.substr(key_end);
+
+							// trimming the whitespace
+							size_t pos = 0;
+							while (pos < value.size() && (value[pos] == u' ' || value[pos] == u'\t')) ++pos;
+							if (pos > 0) value.erase(0, pos);
+						}
+
+						key = IO::ToUTF8(key16);
+					}
+				}
+			}
+			if (key.empty()) // value can be empty, and is expected sometimes, like in the case of Texture ANIMs
+			{
+				file.addProperty(key, value);
+			}
+		}
+	}
 }
