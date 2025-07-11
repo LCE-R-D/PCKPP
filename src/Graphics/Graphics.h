@@ -9,8 +9,8 @@
 
 struct Texture {
     GLuint id{0};
-    int width;
-    int height;
+    int width{0};
+    int height{0};
 };
 
 // Loads texture from memory; also takes optional GL Filter Parameter
