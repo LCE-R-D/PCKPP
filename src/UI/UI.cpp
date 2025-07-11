@@ -15,14 +15,12 @@ static const PCKAssetFile* gLastPreviewedFile = nullptr;
 // Instance globals
 PCKFile* gCurrentPCK{ nullptr };
 static std::string gSelectedNodePath;
-ImGuiIO* io{ nullptr };
 static bool gShouldOpenFolder{ false };
 static bool gShouldCloseFolder{false};
 static bool gHasXMLSupport{ false };
 static IO::Endianness gPCKEndianness{ IO::Endianness::LITTLE };
 
 PCKFile*& GetCurrentPCKFile() { return gCurrentPCK; }
-ImGuiIO*& GetImGuiIO() { return io; }
 
 void ShowSuccessMessage()
 {
@@ -61,12 +59,12 @@ void HandleInput()
 			ShowCancelledMessage();
 	}
 
-	if (io->KeyCtrl)
+	if (ImGui::GetIO().KeyCtrl)
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
 			OpenPCKFileDialog();
 		}
-		else if (gCurrentPCK && io->KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+		else if (gCurrentPCK && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
 			SavePCK(gPCKEndianness, gCurrentPCK->getFilePath()); // Save
 		}
 		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
@@ -149,11 +147,11 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 
 	const auto properties = file.getProperties(); // make a copy of properties
 
-	float propertyWindowPosX = io->DisplaySize.x * 0.25f;
-	float propertyWindowHeight = (io->DisplaySize.y * 0.35f) - ImGui::GetFrameHeight();
-	ImVec2 propertyWindowSize(io->DisplaySize.x * 0.75f, propertyWindowHeight);
+	float propertyWindowPosX = ImGui::GetIO().DisplaySize.x * 0.25f;
+	float propertyWindowHeight = (ImGui::GetIO().DisplaySize.y * 0.35f) - ImGui::GetFrameHeight();
+	ImVec2 propertyWindowSize(ImGui::GetIO().DisplaySize.x * 0.75f, propertyWindowHeight);
 	ImGui::SetNextWindowSize(propertyWindowSize, ImGuiCond_Always);
-	ImGui::SetNextWindowPos(ImVec2(propertyWindowPosX, io->DisplaySize.y - propertyWindowHeight), ImGuiCond_Always);
+	ImGui::SetNextWindowPos(ImVec2(propertyWindowPosX, ImGui::GetIO().DisplaySize.y - propertyWindowHeight), ImGuiCond_Always);
 
 	ImGui::Begin("Properties", nullptr,
 		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
@@ -269,8 +267,8 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 
 	if (gPreviewTexture.id == 0) return;
 
-	float previewPosX = io->DisplaySize.x * 0.25f;
-	ImVec2 previewWindowSize(io->DisplaySize.x * 0.75f, io->DisplaySize.y - (io->DisplaySize.y * 0.35f));
+	float previewPosX = ImGui::GetIO().DisplaySize.x * 0.25f;
+	ImVec2 previewWindowSize(ImGui::GetIO().DisplaySize.x * 0.75f, ImGui::GetIO().DisplaySize.y - (ImGui::GetIO().DisplaySize.y * 0.35f));
 	ImGui::SetNextWindowPos(ImVec2(previewPosX, ImGui::GetFrameHeight()), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(previewWindowSize, ImGuiCond_Always);
 
@@ -279,8 +277,8 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 		ImGuiWindowFlags_HorizontalScrollbar);
 	ImGui::BeginChild("PreviewScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 
-	if (ImGui::IsWindowHovered() && io->KeyCtrl && io->MouseWheel != 0.0f) {
-		float zoomDelta = io->MouseWheel * 0.1f;
+	if (ImGui::IsWindowHovered() && ImGui::GetIO().KeyCtrl && ImGui::GetIO().MouseWheel != 0.0f) {
+		float zoomDelta = ImGui::GetIO().MouseWheel * 0.1f;
 		userZoom = std::clamp(userZoom * (1.0f + zoomDelta), 0.5f, 100.0f); // this clamp is a little weird but it works lol
 		zoomChanged = true;
 	}
@@ -513,7 +511,7 @@ static void RenderFileTree() {
 
 	gVisibleNodes.clear();
 	ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetFrameHeight()));
-	ImGui::SetNextWindowSize(ImVec2(io->DisplaySize.x * 0.25f, io->DisplaySize.y - ImGui::GetFrameHeight()));
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x * 0.25f, ImGui::GetIO().DisplaySize.y - ImGui::GetFrameHeight()));
 	ImGui::Begin(std::string(gCurrentPCK->getFileName() + "###FileTree").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
 	gShouldOpenFolder = false;
@@ -592,26 +590,24 @@ void UISetup() {
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.CellPadding = ImVec2(0, 0);
 
-	io = &ImGui::GetIO();
-
 	ImFontConfig config;
 	config.MergeMode = false;
 	config.PixelSnapH = true;
 
-	io->Fonts->AddFontFromFileTTF("assets/fonts/m6x11plus.ttf", 18.0f, &config);
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/m6x11plus.ttf", 18.0f, &config);
 
 	config.MergeMode = true;
 
 	// Merge Chinese (Simplified)
-	io->Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, io->Fonts->GetGlyphRangesChineseSimplifiedCommon());
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
 	// Merge Chinese (Traditional)
-	io->Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, io->Fonts->GetGlyphRangesChineseFull());
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
 	// Merge Japanese
-	io->Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, io->Fonts->GetGlyphRangesJapanese());
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
 	// Merge Korean
-	io->Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, io->Fonts->GetGlyphRangesKorean());
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesKorean());
 
-	io->Fonts->Build();
+	ImGui::GetIO().Fonts->Build();
 }
 
 void ResetUIData(const std::string& filePath) {

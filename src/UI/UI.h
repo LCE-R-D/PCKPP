@@ -12,9 +12,6 @@
 // Get the instance's current PCK File
 PCKFile*& GetCurrentPCKFile();
 
-// Get the instance's current ImGui IO stuff
-ImGuiIO*& GetImGuiIO();
-
 // Instead of writing a 1,000 success messages
 void ShowSuccessMessage();
 
