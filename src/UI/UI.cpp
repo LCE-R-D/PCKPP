@@ -532,17 +532,6 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 	}
 }
 
-// Finds the currently selected file
-static const PCKAssetFile* FindSelectedFile(const FileTreeNode& node) {
-	if (node.path == gSelectedPath && node.file)
-		return node.file;
-	for (const auto& child : node.children) {
-		const PCKAssetFile* result = FindSelectedFile(child);
-		if (result) return result;
-	}
-	return nullptr;
-}
-
 // Renders the file tree... duh
 static void RenderFileTree() {
 	if (!gCurrentPCK) return;
@@ -585,8 +574,13 @@ static void RenderFileTree() {
 	}
 
 	const PCKAssetFile* selectedFile = nullptr;
-	for (const auto& node : gTreeNodes) {
-		selectedFile = FindSelectedFile(node);
+	for (const auto& _ : gTreeNodes) {
+
+		FileTreeNode* selectedNode = FindNodeByPath(gSelectedPath, gTreeNodes);
+
+		if(selectedNode && selectedNode->file)
+			selectedFile = selectedNode->file;
+
 		if (selectedFile) break;
 	}
 	if (selectedFile)
