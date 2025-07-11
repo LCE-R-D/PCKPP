@@ -68,7 +68,6 @@ void DeleteNode(FileTreeNode& targetNode, std::vector<FileTreeNode>& nodes)
 	}
 }
 
-// Sorts the file tree; First by folders, then by files; folders are sorted alphabetically, and files are not sorted at all
 void SortTree(FileTreeNode& node) {
 	std::stable_sort(node.children.begin(), node.children.end(), [](const FileTreeNode& a, const FileTreeNode& b) {
 		if (!a.file && b.file) return true;
@@ -81,7 +80,6 @@ void SortTree(FileTreeNode& node) {
 			SortTree(child);
 }
 
-// Builds the file tree
 void BuildFileTree(std::vector<FileTreeNode>& nodes) {
 	if (!GetCurrentPCKFile()) 
 		return;
@@ -127,4 +125,23 @@ void BuildFileTree(std::vector<FileTreeNode>& nodes) {
 
 	SortTree(root);
 	nodes = std::move(root.children);
+}
+
+void ScrollToNode(bool& keyScrolled)
+{
+	if (!keyScrolled)
+		return;
+
+	float itemMin = ImGui::GetItemRectMin().y;
+	float itemMax = ImGui::GetItemRectMax().y;
+	float viewMin = ImGui::GetWindowPos().y;
+	float viewMax = viewMin + ImGui::GetWindowSize().y;
+
+	// Scroll if node is not fully visible
+	if (itemMin < viewMax || itemMax > viewMin)
+	{
+		ImGui::SetScrollHereY(0.5f);
+	}
+
+	keyScrolled = false;
 }

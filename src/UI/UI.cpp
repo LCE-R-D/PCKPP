@@ -321,26 +321,6 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 	ImGui::End();
 }
 
-// Scrolls to selected node when not visible
-static void ScrollToNode()
-{
-	if (!gKeyboardScrolled)
-		return;
-
-	float itemMin = ImGui::GetItemRectMin().y;
-	float itemMax = ImGui::GetItemRectMax().y;
-	float viewMin = ImGui::GetWindowPos().y;
-	float viewMax = viewMin + ImGui::GetWindowSize().y;
-
-	// Scroll if node is not fully visible
-	if (itemMin < viewMax || itemMax > viewMin)
-	{
-		ImGui::SetScrollHereY(0.5f);
-	}
-
-	gKeyboardScrolled = false;
-}
-
 static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons)
 {
 	static SDL_MessageBoxData messageboxdata = {};
@@ -494,7 +474,7 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 	if (isSelected)
 	{
 		flags |= ImGuiTreeNodeFlags_Selected;
-		ScrollToNode();
+		ScrollToNode(gKeyboardScrolled);
 	}
 
 	if (isFolder) {

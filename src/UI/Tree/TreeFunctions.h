@@ -23,3 +23,6 @@ void SortTree(FileTreeNode& node);
 
 // Builds a given file tree
 void BuildFileTree(std::vector<FileTreeNode>& nodes);
+
+// Scrolls to selected node when not visible
+void ScrollToNode(bool& keyScrolled);
