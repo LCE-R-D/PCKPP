@@ -135,12 +135,12 @@ void ScrollToNode(bool& keyScrolled)
 	float itemMin = ImGui::GetItemRectMin().y;
 	float itemMax = ImGui::GetItemRectMax().y;
 	float viewMin = ImGui::GetWindowPos().y;
-	float viewMax = viewMin + ImGui::GetWindowSize().y;
+	float viewMax = viewMin + ImGui::GetWindowSize().y - ImGui::GetItemRectSize().y;
 
-	// Scroll if node is not fully visible
-	if (itemMin < viewMax || itemMax > viewMin)
+	// Scroll only if item is outside the visible region
+	if (itemMin < viewMin || itemMax > viewMax)
 	{
-		ImGui::SetScrollHereY(0.5f);
+		ImGui::SetScrollHereY(0.5f); // Center it
 	}
 
 	keyScrolled = false;
