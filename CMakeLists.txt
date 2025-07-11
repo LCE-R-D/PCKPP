@@ -12,10 +12,26 @@ enable_language(CXX)
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
 set(SRC ${SOURCE_FILES})
 
-add_executable(PCKPP ${SRC})
+# TODO: Add icons for other platforms
 
-set_target_properties(PCKPP PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
-set_target_properties(PCKPP PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+# Windows embedded resources
+if(WIN32)
+    set(RESOURCE_RC "${CMAKE_CURRENT_SOURCE_DIR}/assets/platforms/windows/resources.rc")
+
+    if(EXISTS ${RESOURCE_RC})
+        message(STATUS "Including Windows resource file: ${RESOURCE_RC}")
+        set(RESOURCE_FILES ${RESOURCE_RC})
+    else()
+        message(WARNING "Windows resource file not found: ${RESOURCE_RC}")
+    endif()
+endif()
+
+add_executable(PCKPP ${SRC} ${RESOURCE_FILES})
+
+if(WIN32)
+    set_target_properties(PCKPP PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
+    set_target_properties(PCKPP PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+endif()
 
 find_package(OpenGL REQUIRED)
 target_link_libraries(PCKPP PRIVATE OpenGL::GL)
