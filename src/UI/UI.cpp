@@ -202,12 +202,6 @@ void HandleMenuBar() {
 	}
 }
 
-// Grabs the filename directly from path... I should probably be using filesystem lol
-static std::string GetFileNameFromPath(const std::string& fullPath) {
-	size_t pos = fullPath.find_last_of("/\\");
-	return (pos == std::string::npos) ? fullPath : fullPath.substr(pos + 1);
-}
-
 // Sorts the file tree; First by folders, then by files; folders are sorted alphabetically, and files are not sorted at all
 static void SortTree(FileTreeNode& node) {
 	std::stable_sort(node.children.begin(), node.children.end(), [](const FileTreeNode& a, const FileTreeNode& b) {
@@ -498,9 +492,9 @@ static void ExtractDataToFile(const PCKAssetFile& file, bool includeProperties =
 
 	// this is very dumb and I'll have to give this a rewrite sometime
 	if(includeProperties)
-		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), GetFileNameFromPath(file.getPath()), true, file.getProperties());
+		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), filePath.filename().string(), true, file.getProperties());
 	else
-		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), GetFileNameFromPath(file.getPath()));
+		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), filePath.filename().string());
 
 	if (!outPath.empty())
 		ShowSuccessMessage();
@@ -569,7 +563,7 @@ static void SaveFilePropertiesAs(const PCKAssetFile& file)
 	filter.name = nameStr.c_str();
 	filter.pattern = patternStr.c_str();
 
-	std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, GetFileNameFromPath(file.getPath()) + ".txt");
+	std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, std::filesystem::path(file.getPath()).filename().string() + ".txt");
 
 	if (!outpath.empty())
 	{
@@ -603,7 +597,7 @@ static void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties =
 				}
 				else
 				{
-					std::string fileName = GetFileNameFromPath(n.path);
+					std::string fileName = std::filesystem::path(n.path).filename().string();
 					std::string filePath = currentPath + "/" + fileName;
 
 					std::ofstream outFile(filePath, std::ios::binary);
@@ -730,7 +724,7 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 		const PCKAssetFile& file = *node.file;
 		ImGui::Image((void*)(intptr_t)gFileIcons[file.getAssetType()].id, ImVec2(48, 48));
 		ImGui::SameLine();
-		if (ImGui::Selectable((GetFileNameFromPath(file.getPath()) + "###" + file.getPath()).c_str(), isSelected))
+		if (ImGui::Selectable((std::filesystem::path(file.getPath()).filename().string() + "###" + file.getPath()).c_str(), isSelected))
 			gSelectedPath = node.path;
 
 		if (IsClicked())
