@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <vector>
+#include <filesystem>
 #include "PCKAssetFile.h"
 #include "../IO/IO.h"
 
@@ -41,10 +42,15 @@ public:
 
 	void setXMLSupport(bool value);
 
+	std::string& getFileName() const;
+
+	std::string& getFilePath() const;
+
 private:
 	IO::Endianness mEndianess{ IO::Endianness::LITTLE };
 	bool mXMLSupport{false};
 	uint32_t mVersion{};
 	std::vector<std::string> mProperties{};
 	std::vector<PCKAssetFile> mFiles{};
+	std::filesystem::path mFilePath{};
 };

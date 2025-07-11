@@ -7,6 +7,7 @@ const char* XML_VERSION_STRING{ "XMLVERSION" }; // used for advanced/full box su
 
 void PCKFile::Read(const std::string& inpath)
 {
+	mFilePath = inpath;
 	BinaryReader reader(inpath);
 
 	uint32_t version;
@@ -252,4 +253,14 @@ PCKFile::~PCKFile()
 {
 	mProperties.clear();
 	mFiles.clear();
+}
+
+std::string& PCKFile::getFilePath() const
+{
+	return mFilePath.string();
+}
+
+std::string& PCKFile::getFileName() const
+{
+	return mFilePath.filename().string();
 }
