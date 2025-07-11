@@ -1,8 +1,4 @@
 ﻿#include "UI.h"
-#include <iomanip>
-#include <sstream>
-#include <filesystem>
-#include <map>
 
 struct FileTreeNode {
 	std::string path{};
@@ -631,39 +627,8 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 		{
 			if (ImGui::MenuItem("File Data"))
 			{
-				std::filesystem::path filePath(node.file->getPath());
-
-				std::string ext = filePath.extension().string();
-				if (!ext.empty() && ext[0] == '.')
-					ext.erase(0, 1);
-
-				std::string label = std::string(node.file->getAssetTypeString()) + " File | *." + ext + " File";
-				SDL_DialogFileFilter filters[] = {
-					{ label.c_str(), ext.c_str() },
-					{ "All Files", "*" }
-				};
-
-				std::string inpath = IO::OpenFileDialog(GetWindow(), filters);
-
-				if (!inpath.empty())
-				{
-					std::ifstream in(inpath, std::ios::binary | std::ios::ate);
-					if (in)
-					{
-						std::streamsize size = in.tellg();
-						in.seekg(0, std::ios::beg);
-						std::vector<unsigned char> buffer(size);
-
-						in.read(reinterpret_cast<char*>(buffer.data()), size);
-						if (in.gcount() == size)
-						{
-							node.file->setData(buffer);
-						}
-						in.close();
-
-						ResetPreviewWindow();
-					}
-				}
+				if (SetDataFromFile(*node.file))
+					ResetPreviewWindow();
 			}
 			if (ImGui::MenuItem("File Properties"))
 			{

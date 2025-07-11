@@ -15,3 +15,6 @@ void SavePCKFileAs(IO::Endianness endianness, const std::string& defaultName);
 
 // function to open a file dialog and read properties into a given file
 void SetPropertiesFromFile(PCKAssetFile& file);
+
+// function to set data from file; returns success bool for processing
+bool SetDataFromFile(PCKAssetFile& file);

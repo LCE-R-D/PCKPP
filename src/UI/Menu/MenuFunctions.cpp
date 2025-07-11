@@ -1,6 +1,5 @@
 #include "MenuFunctions.h"
 #include "../UI.h"
-#include <sstream>
 
 static SDL_DialogFileFilter pckFilter[] = {
 	{ "Minecraft LCE DLC Files (*.pck)", "pck" }
@@ -43,7 +42,7 @@ void OpenPCKFileDialog()
 	if(!filePath.empty())
 		OpenPCKFile(filePath);
 	else
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "User aborted operation.", GetWindow());
+		
 }
 
 void SavePCKFileAs(IO::Endianness endianness, const std::string& defaultName)
@@ -173,10 +172,49 @@ void SetPropertiesFromFile(PCKAssetFile& file)
 					}
 				}
 			}
-			if (key.empty()) // value can be empty, and is expected sometimes, like in the case of Texture ANIMs
+			if (key.empty()) // key cannot be empty; value can be empty, and is expected sometimes, like in the case of Texture ANIMs
 			{
 				file.addProperty(key, value);
 			}
 		}
 	}
+}
+
+bool SetDataFromFile(PCKAssetFile& file)
+{
+	std::filesystem::path filePath(file.getPath());
+
+	std::string ext = filePath.extension().string();
+	if (!ext.empty() && ext[0] == '.')
+		ext.erase(0, 1);
+
+	std::string label = std::string(file.getAssetTypeString()) + " File | *." + ext + " File";
+	SDL_DialogFileFilter filters[] = {
+		{ label.c_str(), ext.c_str() },
+		{ "All Files", "*" }
+	};
+
+	std::string inpath = IO::OpenFileDialog(GetWindow(), filters);
+
+	if (!inpath.empty())
+	{
+		std::ifstream in(inpath, std::ios::binary | std::ios::ate);
+		if (in)
+		{
+			std::streamsize size = in.tellg();
+			in.seekg(0, std::ios::beg);
+			std::vector<unsigned char> buffer(size);
+
+			in.read(reinterpret_cast<char*>(buffer.data()), size);
+			if (in.gcount() == size)
+			{
+				file.setData(buffer);
+			}
+			in.close();
+
+			return true;
+		}
+	}
+
+	return false;
 }
