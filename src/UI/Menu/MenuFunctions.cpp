@@ -1,5 +1,6 @@
 #include "MenuFunctions.h"
 #include "../UI.h"
+#include <array>
 
 static SDL_DialogFileFilter pckFilter[] = {
 	{ "Minecraft LCE DLC Files (*.pck)", "pck" }
@@ -187,6 +188,27 @@ void SetFilePropertiesDialog(PCKAssetFile& file)
 		ShowCancelledMessage();
 }
 
+SDL_DialogFileFilter GetFilter(const PCKAssetFile& file)
+{
+	std::array<const char*, 2> ext = file.getPreferredExtension();
+
+	static std::string nameStr;
+	static std::string patternStr;
+
+	nameStr = std::string(file.getAssetTypeStringDisplay()) + " File | *." + ext[0];
+	patternStr = std::string(ext[0]);
+
+	if (ext[1] != nullptr) {
+		nameStr += ";*." + std::string(ext[1]);
+		patternStr += ";" + std::string(ext[1]);
+	}
+
+	SDL_DialogFileFilter filter{};
+	filter.name = nameStr.c_str();
+	filter.pattern = patternStr.c_str();
+	return filter;
+}
+
 bool SetDataFromFile(PCKAssetFile& file)
 {
 	std::filesystem::path filePath(file.getPath());
@@ -196,8 +218,9 @@ bool SetDataFromFile(PCKAssetFile& file)
 		ext.erase(0, 1);
 
 	std::string label = std::string(file.getAssetTypeString()) + " File | *." + ext + " File";
+
 	SDL_DialogFileFilter filters[] = {
-		{ label.c_str(), ext.c_str() },
+		GetFilter(file),
 		{ "All Files", "*" }
 	};
 
@@ -274,19 +297,7 @@ void ExtractFileDataDialog(const PCKAssetFile& file, bool includeProperties)
 {
 	std::filesystem::path filePath(file.getPath());
 
-	std::string ext = filePath.extension().string();
-	if (!ext.empty() && ext[0] == '.')
-		ext.erase(0, 1);
-
-	static std::string nameStr;
-	static std::string patternStr;
-
-	nameStr = std::string(file.getAssetTypeString()) + " | *." + ext + " File";
-	patternStr = ext;
-
-	SDL_DialogFileFilter filter{};
-	filter.name = nameStr.c_str();
-	filter.pattern = patternStr.c_str();
+	SDL_DialogFileFilter filter = GetFilter(file);
 
 	std::string outPath{};
 
