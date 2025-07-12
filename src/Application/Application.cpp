@@ -17,7 +17,6 @@ bool Application::Init(int argc, char* argv[]) {
 
 PCKFile* Application::CurrentPCKFile()
 {
-    SDL_Log("%d", bool(mCurrentPCKFile));
     return mCurrentPCKFile;
 }
 
