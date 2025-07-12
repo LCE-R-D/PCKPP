@@ -69,7 +69,7 @@ public:
 		case Type::GAME_RULES: return "GAME RULES";
 		case Type::AUDIO_DATA: return "AUDIO DATA";
 		case Type::COLOUR_TABLE: return "COLOUR TABLE";
-		case Type::GAME_RULES_HEADER: return "GAME RULES_HEADER";
+		case Type::GAME_RULES_HEADER: return "GAME RULES HEADER";
 		case Type::SKIN_DATA: return "SKIN DATA";
 		case Type::MODELS: return "MODELS";
 		case Type::BEHAVIOURS: return "BEHAVIOURS";
