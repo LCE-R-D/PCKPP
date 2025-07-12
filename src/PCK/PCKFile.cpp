@@ -7,6 +7,11 @@ const char* XML_VERSION_STRING{ "XMLVERSION" }; // used for advanced/full box su
 
 void PCKFile::Read(const std::string& inpath)
 {
+	if (!this)
+	{
+		return; // no longer attempt to read if null for some reason
+	}
+
 	BinaryReader reader(inpath);
 
 	uint32_t version;
@@ -119,6 +124,11 @@ void PCKFile::Read(const std::string& inpath)
 
 void PCKFile::Write(const std::string& outpath, IO::Endianness endianness)
 {
+	if (!this)
+	{
+		return; // no longer attempt to write if null for some reason
+	}
+
 	BinaryWriter writer(outpath);
 	writer.SetEndianness(endianness);
 
