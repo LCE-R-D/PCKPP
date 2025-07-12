@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <array>
 
 // PCK Asset File and Asset File Types research done by NessieHax/Miku666/nullptr, myself (May/MattNL), and many others over the years.
 
@@ -74,6 +75,40 @@ public:
 		case Type::BEHAVIOURS: return "BEHAVIOURS";
 		case Type::MATERIALS: return "MATERIALS";
 		default: return "UNKNOWN";
+		}
+	}
+
+	constexpr std::array<const char*, 2> PCKAssetFile::getPreferredExtension() const
+	{
+		return getPreferredExtension(mAssetType);
+	}
+
+	static constexpr std::array<const char*, 2> PCKAssetFile::getPreferredExtension(PCKAssetFile::Type type)
+	{
+		switch (type)
+		{
+		case Type::SKIN:
+		case Type::CAPE:
+		case Type::TEXTURE:
+			return { "png", "tga" };
+		case Type::TEXTURE_PACK_INFO:
+		case Type::AUDIO_DATA:
+		case Type::SKIN_DATA:
+			return { "pck", nullptr };
+		case Type::LOCALISATION:
+			return { "loc", nullptr };
+		case Type::GAME_RULES:
+			return { "grf", nullptr };
+		case Type::COLOUR_TABLE:
+			return { "col", nullptr };
+		case Type::GAME_RULES_HEADER:
+			return { "grh", nullptr };
+		case Type::MODELS:
+		case Type::BEHAVIOURS:
+		case Type::MATERIALS:
+			return { "bin", nullptr };
+		default:
+			return { "*" }; // any file type
 		}
 	}
 
