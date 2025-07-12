@@ -9,9 +9,6 @@
 #include <iomanip>
 #include <map>
 
-// Get the instance's current PCK File
-PCKFile*& GetCurrentPCKFile();
-
 // Setup UI related Vendors
 void UISetup();
 

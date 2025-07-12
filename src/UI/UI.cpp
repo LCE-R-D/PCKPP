@@ -1,4 +1,5 @@
-﻿#include "UI.h"
+﻿#include "../Application/Application.h"
+#include "UI.h"
 #include "Tree/TreeFunctions.h"
 
 // Resource globals
@@ -13,12 +14,9 @@ std::string gPreviewTitle = "Preview";
 static const PCKAssetFile* gLastPreviewedFile = nullptr;
 
 // Instance globals
-PCKFile* gCurrentPCK{ nullptr };
 static std::string gSelectedNodePath;
 static bool gHasXMLSupport{ false };
 static IO::Endianness gPCKEndianness{ IO::Endianness::LITTLE };
-
-PCKFile*& GetCurrentPCKFile() { return gCurrentPCK; }
 
 void UISetup() {
 	gFolderIcon = LoadTextureFromFile("assets/icons/NODE_FOLDER.png", GL_LINEAR_MIPMAP_LINEAR);
@@ -64,10 +62,12 @@ void UICleanup() {
 
 void ResetUIData(const std::string& filePath) {
 
-	if (gCurrentPCK)
+	PCKFile* pckFile = gApp->CurrentPCKFile();
+
+	if (pckFile)
 	{
-		gHasXMLSupport = gCurrentPCK->getXMLSupport();
-		gPCKEndianness = gCurrentPCK->getEndianness();
+		gHasXMLSupport = pckFile->getXMLSupport();
+		gPCKEndianness = pckFile->getEndianness();
 	}
 
 	gSelectedNodePath = "";
@@ -76,24 +76,26 @@ void ResetUIData(const std::string& filePath) {
 }
 
 void HandleMenuBar() {
+	PCKFile* pckFile = gApp->CurrentPCKFile();
+
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
 				OpenPCKFileDialog();
 			}
-			if (gCurrentPCK)
+			if (pckFile)
 			{
-				if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gCurrentPCK)) {
-					SavePCK(gTreeNodes, gPCKEndianness, gCurrentPCK->getFilePath());
+				if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, pckFile)) {
+					SavePCK(gTreeNodes, gPCKEndianness, pckFile->getFilePath());
 				}
-				if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gCurrentPCK)) {
-					SavePCK(gTreeNodes, gPCKEndianness, "", gCurrentPCK->getFileName());
+				if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, pckFile)) {
+					SavePCK(gTreeNodes, gPCKEndianness, "", pckFile->getFileName());
 				}
 			}
 			ImGui::EndMenu();
 		}
 
-		if (gCurrentPCK)
+		if (pckFile)
 		{
 			if (ImGui::BeginMenu("PCK"))
 			{
@@ -110,7 +112,7 @@ void HandleMenuBar() {
 
 				ImGui::NewLine();
 				if (ImGui::Checkbox("Full BOX Support (for Skins)", &gHasXMLSupport)) {
-					gCurrentPCK->setXMLSupport(gHasXMLSupport);
+					pckFile->setXMLSupport(gHasXMLSupport);
 				}
 
 				ImGui::EndMenu();
@@ -122,8 +124,10 @@ void HandleMenuBar() {
 
 void HandleInput()
 {
+	PCKFile* pckFile = gApp->CurrentPCKFile();
+
 	// make sure to pass false or else it will trigger multiple times
-	if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+	if (pckFile && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
 		if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
 			if (FileTreeNode* node = FindNodeByPath(gSelectedNodePath, gTreeNodes))
 			{
@@ -140,11 +144,11 @@ void HandleInput()
 		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
 			OpenPCKFileDialog();
 		}
-		else if (gCurrentPCK && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gTreeNodes, gPCKEndianness, gCurrentPCK->getFilePath()); // Save
+		else if (pckFile && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+			SavePCK(gTreeNodes, gPCKEndianness, pckFile->getFilePath()); // Save
 		}
-		else if (gCurrentPCK && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gTreeNodes, gPCKEndianness, "", gCurrentPCK->getFileName()); // Save As
+		else if (pckFile && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+			SavePCK(gTreeNodes, gPCKEndianness, "", pckFile->getFileName()); // Save As
 		}
 	}
 }
@@ -504,14 +508,17 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 
 // Renders the file tree... duh
 static void RenderFileTree() {
-	if (!gCurrentPCK) return;
+
+	PCKFile* pckFile = gApp->CurrentPCKFile();
+
+	if (!pckFile) return;
 
 	bool shouldScroll = false;
 
 	gVisibleNodes.clear();
 	ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetFrameHeight()));
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x * 0.25f, ImGui::GetIO().DisplaySize.y - ImGui::GetFrameHeight()));
-	ImGui::Begin(std::string(gCurrentPCK->getFileName() + "###FileTree").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+	ImGui::Begin(std::string(pckFile->getFileName() + "###FileTree").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
 	bool shouldOpenFolder = false;
 	bool shouldCloseFolder = false;

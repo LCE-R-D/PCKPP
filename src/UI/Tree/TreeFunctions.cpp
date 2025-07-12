@@ -1,9 +1,12 @@
+#include "../../Application/Application.h"
 #include "TreeFunctions.h"
 #include <functional>
 
 void TreeToPCKFileCollection(std::vector<FileTreeNode>& treeNodes)
 {
-	if (!GetCurrentPCKFile())
+	PCKFile* pckFile = gApp->CurrentPCKFile();
+
+	if (!pckFile)
 		return;
 
 	std::vector<PCKAssetFile> files;
@@ -30,10 +33,10 @@ void TreeToPCKFileCollection(std::vector<FileTreeNode>& treeNodes)
 			collect(node);
 	}
 
-	GetCurrentPCKFile()->clearFiles();
+	pckFile->clearFiles();
 
 	for (const auto& f : files)
-		GetCurrentPCKFile()->addFile(&f);
+		pckFile->addFile(&f);
 
 	files.clear();
 }
@@ -81,13 +84,15 @@ void SortTree(FileTreeNode& node) {
 }
 
 void BuildFileTree(std::vector<FileTreeNode>& nodes) {
-	if (!GetCurrentPCKFile()) 
+	PCKFile* pckFile = gApp->CurrentPCKFile();
+
+	if (!pckFile)
 		return;
 
 	nodes.clear();
 
 	FileTreeNode root;
-	auto& files = GetCurrentPCKFile()->getFiles();
+	auto& files = pckFile->getFiles();
 
 	for (const auto& file : files) {
 		std::string fullPath = file.getPath();

@@ -1,3 +1,4 @@
+#include "../../Application/Application.h"
 #include "MenuFunctions.h"
 #include "../UI.h"
 #include <array>
@@ -11,24 +12,15 @@ void OpenPCKFile(const std::string& inpath)
 	if (inpath.empty())
 		return;
 
-	PCKFile*& currentPCKFile = GetCurrentPCKFile();
-
-	delete currentPCKFile;
-	currentPCKFile = new PCKFile();
-
 	try {
-		currentPCKFile->Read(inpath);
+		gApp->LoadPCKFile(inpath);
 	}
 	catch (const std::exception& e) {
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", e.what(), GetWindow());
-		delete currentPCKFile;
-		currentPCKFile = new PCKFile();
 		return;
 	}
 	catch (...) {
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Unknown Error Occured.", GetWindow());
-		delete currentPCKFile;
-		currentPCKFile = new PCKFile();
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Unknown Error Occurred.", GetWindow());
 		return;
 	}
 
@@ -48,14 +40,14 @@ void OpenPCKFileDialog()
 
 void SavePCKFileDialog(IO::Endianness endianness, const std::string& defaultName)
 {
-	PCKFile*& currentPCKFile = GetCurrentPCKFile();
+	PCKFile* pckFile = gApp->CurrentPCKFile();
 
 	std::string filePath = IO::SaveFileDialog(GetWindow(), pckFilter, defaultName);
 
 	if (!filePath.empty())
 	{
 		SavePCKFile(filePath, endianness);
-		currentPCKFile->setFilePath(filePath); // update to save as location
+		pckFile->setFilePath(filePath); // update to save as location
 	}
 	else
 		ShowCancelledMessage();
@@ -63,15 +55,15 @@ void SavePCKFileDialog(IO::Endianness endianness, const std::string& defaultName
 
 void SavePCKFile(const std::string& outpath, IO::Endianness endianness)
 {
-	PCKFile*& currentPCKFile = GetCurrentPCKFile();
+	PCKFile* pckFile = gApp->CurrentPCKFile();
 
 	try {
-		currentPCKFile->Write(outpath, endianness);
+		pckFile->Write(outpath, endianness);
 	}
 	catch (const std::exception& e) {
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", e.what(), GetWindow());
-		delete currentPCKFile;
-		currentPCKFile = new PCKFile();
+		delete pckFile;
+		pckFile = new PCKFile();
 	}
 
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Saved", "File successfully saved!", GetWindow());
