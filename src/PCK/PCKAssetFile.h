@@ -78,6 +78,36 @@ public:
 		}
 	}
 
+	// Gets a asset type as a string for dialogs
+	constexpr const char* PCKAssetFile::getAssetTypeStringDisplay() const
+	{
+		return getAssetTypeStringDisplay(mAssetType);
+	}
+
+	// Gets a asset type as a string for dialogs
+	static constexpr const char* PCKAssetFile::getAssetTypeStringDisplay(PCKAssetFile::Type type)
+	{
+		switch (type)
+		{
+		case Type::SKIN: return "Skin";
+		case Type::CAPE: return "Cape";
+		case Type::TEXTURE: return "Texture";
+		case Type::UI_DATA: return "UI Data";
+		case Type::INFO: return "Info";
+		case Type::TEXTURE_PACK_INFO: return "Texture Pack Info";
+		case Type::LOCALISATION: return "Localisation";
+		case Type::GAME_RULES: return "Game Rules";
+		case Type::AUDIO_DATA: return "Audio Data";
+		case Type::COLOUR_TABLE: return "Colour Table";
+		case Type::GAME_RULES_HEADER: return "Game Rules Header";
+		case Type::SKIN_DATA: return "Skin Data";
+		case Type::MODELS: return "Models";
+		case Type::BEHAVIOURS: return "Behaviours";
+		case Type::MATERIALS: return "Materials";
+		default: return "Unknown";
+		}
+	}
+
 	constexpr std::array<const char*, 2> PCKAssetFile::getPreferredExtension() const
 	{
 		return getPreferredExtension(mAssetType);
