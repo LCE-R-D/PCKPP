@@ -19,6 +19,12 @@ static bool gHasXMLSupport{ false };
 static IO::Endianness gPCKEndianness{ IO::Endianness::LITTLE };
 
 void UISetup() {
+	SDL_Surface* icon = SDL_LoadBMP("assets/icons/ICON_PCKPP.bmp");
+	if (icon) {
+		SDL_SetWindowIcon(GetWindow(), icon);
+		SDL_DestroySurface(icon);
+	}
+
 	gFolderIcon = LoadTextureFromFile("assets/icons/NODE_FOLDER.png", GL_LINEAR_MIPMAP_LINEAR);
 	for (int i = 0; i < (int)PCKAssetFile::Type::PCK_ASSET_TYPES_TOTAL; i++) {
 		auto type = static_cast<PCKAssetFile::Type>(i);
