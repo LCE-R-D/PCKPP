@@ -28,11 +28,6 @@ endif()
 
 add_executable(PCKPP ${SRC} ${RESOURCE_FILES})
 
-if(WIN32)
-    set_target_properties(PCKPP PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
-    set_target_properties(PCKPP PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
-endif()
-
 find_package(OpenGL REQUIRED)
 target_link_libraries(PCKPP PRIVATE OpenGL::GL)
 target_link_libraries(PCKPP PRIVATE OpenGL::GLU)
