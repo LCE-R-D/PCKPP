@@ -39,7 +39,7 @@ void ProgramSetup() {
 	config.MergeMode = false;
 	config.PixelSnapH = true;
 
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/m6x11plus.ttf", 18.0f, &config);
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-latin.ttf", 18.0f, &config);
 
 	config.MergeMode = true;
 
