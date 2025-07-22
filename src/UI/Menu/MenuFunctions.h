@@ -1,30 +1,34 @@
-#pragma once
+#include "../../Application/Application.h"
+#include <array>
+#include <fstream>
+#include <sstream>
 
-#include "../UI.h"
-
-// function for opening a PCK File via path
+// Opens PCK File from path
 void OpenPCKFile(const std::string& inpath);
 
-// function for opening a PCK file via dialog
+// Opens PCK File via file dialog
 void OpenPCKFileDialog();
 
-// function for saving a PCK File to disk
-void SavePCKFile(const std::string& outpath, IO::Endianness endianness);
+// Saves PCK File via file dialog
+void SavePCKFileDialog(Binary::Endianness endianness, const std::string& defaultName);
 
-// function for saving a PCK File to a specified point on disk
-void SavePCKFileDialog(IO::Endianness endianness, const std::string& defaultName);
+// Saves PCK File to path
+void SavePCKFile(const std::string& outpath, Binary::Endianness endianness);
 
-// function to open a file dialog and read properties into a given file
+// Replaces file properties via file dialog
 void SetFilePropertiesDialog(PCKAssetFile& file);
 
-// function to set data from file; returns success bool for processing
-bool SetDataFromFile(PCKAssetFile& file);
+// Gets file dialog filters from a file's path
+PlatformBase::FileDialogBase::FileFilter GetFilter(const PCKAssetFile& file);
 
-// Save File Properties to File via path
-void SaveFilePropertiesToFile(const PCKAssetFile& file, const std::string& outpath);
+// Sets file data via file dialog
+bool SetFileDataDialog(PCKAssetFile& file);
 
-// Save File Properties to file via dialog
-void SaveFilePropertiesDialog(const PCKAssetFile& file);
+// Writes file properties to path
+void WriteFileProperties(const PCKAssetFile& file, const std::string& outpath);
 
-// Save File Data to file via Dialog
-void ExtractFileDataDialog(const PCKAssetFile& file, bool includeProperties = false);
+// Writes file properties via file dialog
+void WriteFilePropertiesDialog(const PCKAssetFile& file);
+
+// Writes file data to disk via file dialog
+void WriteFileDataDialog(const PCKAssetFile& file, bool includeProperties = false);

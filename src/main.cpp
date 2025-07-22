@@ -1,57 +1,59 @@
 ﻿// PCK++ by May/MattNL :3
 
 #include "Application/Application.h"
-#include "UI/UI.h"
-#include "Graphics/Graphics.h"
-
-#include <SDL3/SDL_main.h>
+#include "Graphics/GraphicsOpenGL.h"
+#include "Platform/PlatformSDL.h"
+#include "UI/UIImGui.h"
+#include "Backends/ImGuiSDLPlatformBackend.hpp"
+#include "Backends/ImGuiOpenGLRendererBackend.hpp"
+#include "Program.h"
 
 int main(int argc, char* argv[]) {
-    if (!GraphicsSetup())
-        return 1;
-
-    Application app;
-    gApp = &app;
-
     if (!gApp->Init(argc, argv))
         return 1;
 
-    SDL_Window* window = GetWindow();
-    UISetup();
+    auto platform = gApp->GetPlatform();
+    auto graphics = gApp->GetGraphics();
+    auto ui = gApp->GetUI();
 
-    bool running = true;
-    while (running) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            ImGui_ImplSDL3_ProcessEvent(&event);
-            if (event.type == SDL_EVENT_QUIT)
-                running = false;
-        }
+    auto platformBackend = std::make_unique<ImGuiSDLPlatformBackend>();
+    auto rendererBackend = std::make_unique<ImGuiOpenGLRendererBackend>();
 
-        if (shouldClose())
-            running = false;
+    if (!platform->Init("PCK++", 1280, 720))
+        return 1;
 
-        ImGui_ImplOpenGL2_NewFrame();
-        ImGui_ImplSDL3_NewFrame();
-        ImGui::NewFrame();
+    if (!graphics->Init())
+      return 1;
 
+    if (!ui->Init())
+        return 1;
+
+    gApp->SetPlatformBackend(std::move(platformBackend));
+    gApp->SetRendererBackend(std::move(rendererBackend));
+
+    if (!ui->InitBackends(platform->GetWindow(), nullptr))
+        return 1;
+
+    const auto& backend = gApp->GetPlatformBackend();
+
+    // platforms implementions must have a custom GetWindow function
+    SDL_Window* window = platform->GetWindow();
+
+    ProgramSetup();
+
+    while (!platform->ShouldClose()) {
+        platform->PollEvents(backend);
+        ui->NewFrame();
+        graphics->NewFrame();
         gApp->Update();
-
-        HandleInput();
-        HandleMenuBar();
-        HandleFileTree();
-
-        ImGui::Render();
-        int display_w, display_h;
-        SDL_GetWindowSize(window, &display_w, &display_h);
-        glViewport(0, 0, display_w, display_h);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+        ui->Render();
+        graphics->Render();
         SDL_GL_SwapWindow(window);
     }
 
-    UICleanup();
-    GraphicsCleanup();
+    ui->Shutdown();
+    graphics->Shutdown();
+    platform->Shutdown();
     gApp->Shutdown();
 
     return 0;

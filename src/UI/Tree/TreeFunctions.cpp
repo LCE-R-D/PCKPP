@@ -1,5 +1,5 @@
-#include "../../Application/Application.h"
 #include "TreeFunctions.h"
+#include "../Menu/MenuFunctions.h"
 #include <functional>
 
 void TreeToPCKFileCollection(std::vector<FileTreeNode>& treeNodes)
@@ -151,7 +151,7 @@ void ScrollToNode(bool& keyScrolled)
 	keyScrolled = false;
 }
 
-void SavePCK(std::vector<FileTreeNode> nodes, IO::Endianness endianness, const std::string& path, const std::string& defaultName)
+void SavePCK(std::vector<FileTreeNode> nodes, Binary::Endianness endianness, const std::string& path, const std::string& defaultName)
 {
 	TreeToPCKFileCollection(nodes);
 
@@ -163,12 +163,14 @@ void SavePCK(std::vector<FileTreeNode> nodes, IO::Endianness endianness, const s
 	}
 }
 
-void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties)
+void WriteFolder(const FileTreeNode& node, bool includeProperties)
 {
-	std::string targetDir = IO::ChooseFolderDialog(GetWindow(), "Choose Output Directory");
+	const auto& platform = gApp->GetPlatform();
+
+	std::string targetDir = platform->mDialog.ChooseFolder();
 	if (targetDir.empty())
 	{
-		ShowCancelledMessage();
+		platform->ShowCancelledMessage();
 		return;
 	}
 
@@ -195,7 +197,7 @@ void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties)
 
 					if (outFile.good() && includeProperties)
 					{
-						SaveFilePropertiesToFile(*n.file, filePath + ".txt");
+						WriteFileProperties(*n.file, filePath + ".txt");
 					}
 				}
 			};
@@ -204,6 +206,6 @@ void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties)
 	}
 	catch (...)
 	{
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", SDL_GetError(), GetWindow());
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", SDL_GetError(), platform->GetWindow());
 	}
 }

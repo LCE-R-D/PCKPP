@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../UI.h"
-#include "../../PCK/PCKAssetFile.h"
+#include "../../Application/Application.h"
 
 struct FileTreeNode {
 	std::string path{};
@@ -9,9 +8,11 @@ struct FileTreeNode {
 	std::vector<FileTreeNode> children;
 };
 
-void SavePCK(std::vector<FileTreeNode> nodes, IO::Endianness endianness, const std::string& path = "", const std::string& defaultName = "");
+// Saves PCK file from tree nodes
+void SavePCK(std::vector<FileTreeNode> nodes, Binary::Endianness endianness, const std::string& path = "", const std::string& defaultName = "");
 
-void SaveFolderAsFiles(const FileTreeNode& node, bool includeProperties = false);
+// Writes folder of nodes to disk via file dialog
+void WriteFolder(const FileTreeNode& node, bool includeProperties = false);
 
 // Convert file tree to PCK File collection
 void TreeToPCKFileCollection(std::vector<FileTreeNode>& treeNodes);

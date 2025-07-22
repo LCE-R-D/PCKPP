@@ -8,7 +8,7 @@ BinaryReader::BinaryReader(const std::string& filepath)
 	}
 }
 
-void BinaryReader::SetEndianness(IO::Endianness endianness)
+void BinaryReader::SetEndianness(Binary::Endianness endianness)
 {
 	mEndianness = endianness;
 }
@@ -24,8 +24,8 @@ uint16_t BinaryReader::ReadInt16()
 {
 	uint16_t value;
 	ReadData(&value, sizeof(value));
-	if (mEndianness == IO::Endianness::BIG)
-		value = SwapInt16(value);
+	if (mEndianness == Binary::Endianness::BIG)
+		value = Binary::SwapInt16(value);
 	return value;
 }
 
@@ -33,8 +33,8 @@ uint32_t BinaryReader::ReadInt32()
 {
 	uint32_t value;
 	ReadData(&value, sizeof(value));
-	if (mEndianness == IO::Endianness::BIG)
-		value = SwapInt32(value);
+	if (mEndianness == Binary::Endianness::BIG)
+		value = Binary::SwapInt32(value);
 	return value;
 }
 
@@ -49,7 +49,7 @@ std::u16string BinaryReader::ReadU16String(size_t length)
 		uint8_t bytes[2];
 		ReadData(bytes, 2);
 
-		if (mEndianness == IO::Endianness::BIG)
+		if (mEndianness == Binary::Endianness::BIG)
 			ch = (bytes[0] << 8) | bytes[1];
 		else
 			ch = (bytes[1] << 8) | bytes[0];
@@ -66,17 +66,4 @@ void BinaryReader::ReadData(void* buffer, size_t size)
 	if (mStream.gcount() != size) {
 		throw std::runtime_error("Failed to read from file.");
 	}
-}
-
-uint16_t BinaryReader::SwapInt16(uint16_t val)
-{
-	return (val >> 8) | (val << 8);
-}
-
-uint32_t BinaryReader::SwapInt32(uint32_t val)
-{
-	return ((val & 0xFF) << 24) |
-		((val & 0xFF00) << 8) |
-		((val & 0xFF0000) >> 8) |
-		((val & 0xFF000000) >> 24);
 }

@@ -1,6 +1,9 @@
-﻿#include "../Application/Application.h"
-#include "UI.h"
-#include "Tree/TreeFunctions.h"
+﻿#include "Program.h"
+#include "Application/Application.h"
+#include "UI/Tree/TreeFunctions.h"
+#include "UI/Menu/MenuFunctions.h"
+#include <map>
+#include <sstream>
 
 // Resource globals
 std::map<PCKAssetFile::Type, Texture> gFileIcons;
@@ -16,23 +19,17 @@ static const PCKAssetFile* gLastPreviewedFile = nullptr;
 // Instance globals
 static std::string gSelectedNodePath;
 static bool gHasXMLSupport{ false };
-static IO::Endianness gPCKEndianness{ IO::Endianness::LITTLE };
+static Binary::Endianness gPCKEndianness{ Binary::Endianness::LITTLE };
 
-void UISetup() {
-	SDL_Surface* icon = SDL_LoadBMP("assets/icons/ICON_PCKPP.bmp");
-	if (icon) {
-		SDL_SetWindowIcon(GetWindow(), icon);
-		SDL_DestroySurface(icon);
-	}
-
-	gFolderIcon = LoadTextureFromFile("assets/icons/NODE_FOLDER.png", GL_LINEAR_MIPMAP_LINEAR);
+void ProgramSetup() {
+	gFolderIcon = gApp->GetGraphics()->LoadTextureFromFile("assets/icons/NODE_FOLDER.png", TextureFilter::LINEAR_MIPMAP_LINEAR);
 	for (int i = 0; i < (int)PCKAssetFile::Type::PCK_ASSET_TYPES_TOTAL; i++) {
 		auto type = static_cast<PCKAssetFile::Type>(i);
 		std::string name = (type == PCKAssetFile::Type::UI_DATA)
 			? PCKAssetFile::getAssetTypeString(PCKAssetFile::Type::PCK_ASSET_TYPES_TOTAL)
 			: PCKAssetFile::getAssetTypeString(type);
 		std::string path = "assets/icons/FILE_" + name + ".png";
-		gFileIcons[type] = LoadTextureFromFile(path, GL_LINEAR_MIPMAP_LINEAR);
+		gFileIcons[type] = gApp->GetGraphics()->LoadTextureFromFile(path, TextureFilter::LINEAR_MIPMAP_LINEAR);
 	}
 
 	ImGuiStyle& style = ImGui::GetStyle();
@@ -58,15 +55,7 @@ void UISetup() {
 	ImGui::GetIO().Fonts->Build();
 }
 
-void UICleanup() {
-	ResetUIData();
-	for (auto& [type, tex] : gFileIcons)
-		if (tex.id != 0)
-			glDeleteTextures(1, &tex.id);
-	gFileIcons.clear();
-}
-
-void ResetUIData(const std::string& filePath) {
+void ResetProgramData() {
 
 	PCKFile* pckFile = gApp->CurrentPCKFile();
 
@@ -79,6 +68,14 @@ void ResetUIData(const std::string& filePath) {
 	gSelectedNodePath = "";
 	gVisibleNodes.clear();
 	gTreeNodes.clear();
+}
+
+void ProgramCleanup() {
+	ResetProgramData();
+	for (auto& [type, tex] : gFileIcons)
+		if (tex.id != 0)
+			glDeleteTextures(1, &tex.id);
+	gFileIcons.clear();
 }
 
 void HandleMenuBar() {
@@ -106,14 +103,14 @@ void HandleMenuBar() {
 			if (ImGui::BeginMenu("PCK"))
 			{
 				ImGui::Text("PCK Format:");
-				if (ImGui::RadioButton("Little Endian (Xbox One, PS4, PSVita, Nintendo Switch)", gPCKEndianness == IO::Endianness::LITTLE))
+				if (ImGui::RadioButton("Little Endian (Xbox One, PS4, PSVita, Nintendo Switch)", gPCKEndianness == Binary::Endianness::LITTLE))
 				{
-					gPCKEndianness = IO::Endianness::LITTLE;
+					gPCKEndianness = Binary::Endianness::LITTLE;
 				}
 
-				if (ImGui::RadioButton("Big Endian (Xbox 360, PS3, Wii U)", gPCKEndianness == IO::Endianness::BIG))
+				if (ImGui::RadioButton("Big Endian (Xbox 360, PS3, Wii U)", gPCKEndianness == Binary::Endianness::BIG))
 				{
-					gPCKEndianness = IO::Endianness::BIG;
+					gPCKEndianness = Binary::Endianness::BIG;
 				}
 
 				ImGui::NewLine();
@@ -132,9 +129,11 @@ void HandleInput()
 {
 	PCKFile* pckFile = gApp->CurrentPCKFile();
 
+	const auto& platform = gApp->GetPlatform();
+
 	// make sure to pass false or else it will trigger multiple times
 	if (pckFile && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
-		if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
+		if (platform->ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
 			if (FileTreeNode* node = FindNodeByPath(gSelectedNodePath, gTreeNodes))
 			{
 				DeleteNode(*node, gTreeNodes);
@@ -142,7 +141,7 @@ void HandleInput()
 			}
 		}
 		else
-			ShowCancelledMessage();
+			platform->ShowCancelledMessage();
 	}
 
 	if (ImGui::GetIO().KeyCtrl)
@@ -157,46 +156,6 @@ void HandleInput()
 			SavePCK(gTreeNodes, gPCKEndianness, "", pckFile->getFileName()); // Save As
 		}
 	}
-}
-
-void ShowSuccessMessage()
-{
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Success", "Operation performed successfully.", GetWindow());
-}
-
-void ShowCancelledMessage()
-{
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Cancelled", "User aborted operation.", GetWindow());
-}
-
-static int ShowMessagePrompt(const char* title, const char* message, const SDL_MessageBoxButtonData* buttons, int numButtons)
-{
-	static SDL_MessageBoxData messageboxdata = {};
-	messageboxdata.flags = SDL_MESSAGEBOX_WARNING | SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT;
-	messageboxdata.title = title;
-	messageboxdata.message = message;
-	messageboxdata.numbuttons = numButtons;
-	messageboxdata.buttons = buttons;
-	messageboxdata.window = GetWindow();
-
-	int buttonID = -1;
-	if (SDL_ShowMessageBox(&messageboxdata, &buttonID)) {
-		return buttonID; // return the button ID user clicked
-	}
-	else {
-		SDL_Log("Failed to show message box: %s", SDL_GetError());
-		return -1; // indicate error
-	}
-}
-
-static bool ShowYesNoMessagePrompt(const char* title, const char* message)
-{
-	const static SDL_MessageBoxButtonData buttons[] = {
-		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes" },
-		{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No" }
-	};
-
-	return ShowMessagePrompt(title, message, buttons, SDL_arraysize(buttons)) == 1;
 }
 
 void ResetPreviewWindow()
@@ -219,7 +178,7 @@ static void HandlePreviewWindow(const PCKAssetFile& file) {
 	}
 
 	if (gLastPreviewedFile != &file) {
-		gPreviewTexture = LoadTextureFromMemory(file.getData().data(), file.getFileSize());
+		gPreviewTexture = gApp->GetGraphics()->LoadTextureFromMemory(file.getData().data(), file.getFileSize());
 		gLastPreviewedFile = &file;
 		gPreviewTitle = file.getPath() + " (" + std::to_string(gPreviewTexture.width) + "x" + std::to_string(gPreviewTexture.height) + ")###Preview";
 
@@ -351,7 +310,7 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 				std::strncpy(keyBuffer, key.c_str(), sizeof(keyBuffer) - 1);
 				keyBuffer[sizeof(keyBuffer) - 1] = '\0';
 
-				std::string utf8Value = IO::ToUTF8(value);
+				std::string utf8Value = Binary::ToUTF8(value);
 				std::size_t len = std::min(utf8Value.size(), sizeof(valueBuffer) - 1);
 				std::memcpy(valueBuffer, utf8Value.data(), len);
 				valueBuffer[len] = '\0';
@@ -382,7 +341,7 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 					for (char& c : keyText)
 						c = std::toupper(c);
 
-					editableFile.setPropertyAtIndex(propertyIndex, keyText.empty() ? "KEY" : keyText, IO::ToUTF16(valueBuffer));
+					editableFile.setPropertyAtIndex(propertyIndex, keyText.empty() ? "KEY" : keyText, Binary::ToUTF16(valueBuffer));
 				}
 
 				++propertyIndex;
@@ -397,33 +356,35 @@ static void HandlePropertiesWindow(const PCKAssetFile& file)
 
 static void HandlePCKNodeContextMenu(FileTreeNode& node)
 {
+	const auto& platform = gApp->GetPlatform();
+
 	if (ImGui::BeginPopupContextItem()) {
 		bool isFile = node.file;
 
 		if (ImGui::BeginMenu("Extract")) {
 			if (isFile && ImGui::MenuItem("File"))
 			{
-				ExtractFileDataDialog(*node.file);
+				WriteFileDataDialog(*node.file);
 			}
 			if (!isFile && ImGui::MenuItem("Files"))
 			{
-				SaveFolderAsFiles(node);
+				WriteFolder(node);
 			}
 			if (!isFile && ImGui::MenuItem("Files with Properties"))
 			{
-				SaveFolderAsFiles(node, true);
+				WriteFolder(node, true);
 			}
 
 			bool hasProperties = node.file && !node.file->getProperties().empty();
 
 			if (isFile && hasProperties && ImGui::MenuItem("Properties"))
 			{
-				SaveFilePropertiesDialog(*node.file);
+				WriteFilePropertiesDialog(*node.file);
 			}
 
 			if (isFile && hasProperties && ImGui::MenuItem("File with Properties"))
 			{
-				ExtractFileDataDialog(*node.file, true);
+				WriteFileDataDialog(*node.file, true);
 			}
 
 			ImGui::EndMenu();
@@ -432,7 +393,7 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 		{
 			if (ImGui::MenuItem("File Data"))
 			{
-				if (SetDataFromFile(*node.file))
+				if (SetFileDataDialog(*node.file))
 					ResetPreviewWindow();
 			}
 			if (ImGui::MenuItem("File Properties"))
@@ -442,13 +403,13 @@ static void HandlePCKNodeContextMenu(FileTreeNode& node)
 			ImGui::EndMenu();
 		}
 		if (ImGui::MenuItem("Delete")) {
-			if (ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too."))
+			if (platform->ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too."))
 			{
 				DeleteNode(node, gTreeNodes);
 				TreeToPCKFileCollection(gTreeNodes);
 			}
 			else
-				ShowCancelledMessage();
+				platform->ShowCancelledMessage();
 		}
 		ImGui::EndPopup();
 	}

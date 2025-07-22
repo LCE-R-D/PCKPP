@@ -1,9 +1,12 @@
 #include "../../Application/Application.h"
+#include "../../Program.h"
 #include "MenuFunctions.h"
-#include "../UI.h"
 #include <array>
+#include <fstream>
+#include <sstream>
+#include "../../Util/IO.h"
 
-static SDL_DialogFileFilter pckFilter[] = {
+static PlatformBase::FileDialogBase::FileFilter pckFilter[] = {
 	{ "Minecraft LCE DLC Files (*.pck)", "pck" }
 };
 
@@ -12,37 +15,44 @@ void OpenPCKFile(const std::string& inpath)
 	if (inpath.empty())
 		return;
 
+	auto& fileDialog = gApp->GetPlatform()->mDialog;
+
 	try {
 		gApp->LoadPCKFile(inpath);
 	}
 	catch (const std::exception& e) {
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", e.what(), GetWindow());
+		fileDialog.ShowError("Error", e.what());
 		return;
 	}
 	catch (...) {
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Unknown Error Occurred.", GetWindow());
+		fileDialog.ShowError("Error", "Unknown Error Occurred.");
 		return;
 	}
 
 	// if successful, reset node and UI data; pass file path to send to UI
-	ResetUIData(inpath);
+	ResetProgramData();
 }
 
 void OpenPCKFileDialog()
 {
-	std::string filePath = IO::OpenFileDialog(GetWindow(), pckFilter);
+	auto& fileDialog = gApp->GetPlatform()->mDialog;
+
+	std::string filePath = fileDialog.OpenFile({ pckFilter[0] });
 
 	if (!filePath.empty())
 		OpenPCKFile(filePath);
 	else
-		ShowCancelledMessage();
+		fileDialog.ShowInfo("Cancelled", "User aborted operation.");
 }
 
-void SavePCKFileDialog(IO::Endianness endianness, const std::string& defaultName)
+void SavePCKFileDialog(Binary::Endianness endianness, const std::string& defaultName)
 {
 	PCKFile* pckFile = gApp->CurrentPCKFile();
 
-	std::string filePath = IO::SaveFileDialog(GetWindow(), pckFilter, defaultName);
+	const auto& platform = gApp->GetPlatform();
+	auto& fileDialog = platform->mDialog;
+
+	std::string filePath = fileDialog.SaveFile({ pckFilter[0] }, defaultName);
 
 	if (!filePath.empty())
 	{
@@ -50,33 +60,39 @@ void SavePCKFileDialog(IO::Endianness endianness, const std::string& defaultName
 		pckFile->setFilePath(filePath); // update to save as location
 	}
 	else
-		ShowCancelledMessage();
+		platform->ShowCancelledMessage();
 }
 
-void SavePCKFile(const std::string& outpath, IO::Endianness endianness)
+void SavePCKFile(const std::string& outpath, Binary::Endianness endianness)
 {
 	PCKFile* pckFile = gApp->CurrentPCKFile();
+
+	const auto& platform = gApp->GetPlatform();
+	auto& fileDialog = platform->mDialog;
 
 	try {
 		pckFile->Write(outpath, endianness);
 	}
 	catch (const std::exception& e) {
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", e.what(), GetWindow());
+		fileDialog.ShowError("Error", e.what());
 		delete pckFile;
 		pckFile = new PCKFile();
+		return;
 	}
 
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Saved", "File successfully saved!", GetWindow());
+	platform->ShowSuccessMessage();
 }
 
 void SetFilePropertiesDialog(PCKAssetFile& file)
 {
-	const static SDL_DialogFileFilter filters[] = {
-	{ "Text File", "txt" },
-	{ "All Files", "*" }
+	static PlatformBase::FileDialogBase::FileFilter filters[] = {
+		{ "Text File", "*.txt" },
+		{ "All Files", "*" }
 	};
 
-	std::string inpath = IO::OpenFileDialog(GetWindow(), filters);
+	const auto& platform = gApp->GetPlatform();
+	auto& fileDialog = platform->mDialog;
+	std::string inpath = fileDialog.OpenFile({ filters[0], filters[1] });
 
 	if (!inpath.empty())
 	{
@@ -84,12 +100,12 @@ void SetFilePropertiesDialog(PCKAssetFile& file)
 		if (in)
 		{
 			file.clearProperties();
-			IO::TextEncoding encoding = IO::DetectTextEncoding(in);
+			Binary::TextEncoding encoding = Binary::DetectTextEncoding(in);
 
 			std::string key;
 			std::u16string value;
 
-			if (encoding == IO::TextEncoding::UTF8)
+			if (encoding == Binary::TextEncoding::UTF8)
 			{
 				// Skip BOM if present
 				char first3[3] = { 0 };
@@ -106,19 +122,19 @@ void SetFilePropertiesDialog(PCKAssetFile& file)
 					if (!(iss >> key)) continue;
 
 					// Strip trailing colon, if any
-					if (!key.empty() && key.back() == u':')
+					if (!key.empty() && key.back() == ':')
 						key.pop_back();
 
 					std::string value8;
 					std::getline(iss, value8);
 					value8.erase(0, value8.find_first_not_of(" \t"));
 
-					value = IO::ToUTF16(value8);
+					value = Binary::ToUTF16(value8);
 
 					file.addProperty(key, value);
 				}
 			}
-			else if (encoding == IO::TextEncoding::UTF16_LE || encoding == IO::TextEncoding::UTF16_BE)
+			else if (encoding == Binary::TextEncoding::UTF16_LE || encoding == Binary::TextEncoding::UTF16_BE)
 			{
 				// Skip BOM (2 bytes)
 				in.seekg(2);
@@ -132,8 +148,8 @@ void SetFilePropertiesDialog(PCKAssetFile& file)
 
 				in.read(reinterpret_cast<char*>(buffer.data()), numChars * 2);
 
-				if (encoding == IO::TextEncoding::UTF16_BE)
-					IO::SwapUTF16Bytes(buffer.data(), numChars);
+				if (encoding == Binary::TextEncoding::UTF16_BE)
+					Binary::SwapUTF16Bytes(buffer.data(), numChars);
 
 				size_t start = 0;
 				for (size_t i = 0; i <= numChars; ++i)
@@ -166,7 +182,7 @@ void SetFilePropertiesDialog(PCKAssetFile& file)
 							if (pos > 0) value.erase(0, pos);
 						}
 
-						key = IO::ToUTF8(key16);
+						key = Binary::ToUTF8(key16);
 					}
 				}
 			}
@@ -177,10 +193,10 @@ void SetFilePropertiesDialog(PCKAssetFile& file)
 		}
 	}
 	else
-		ShowCancelledMessage();
+		platform->ShowCancelledMessage();
 }
 
-SDL_DialogFileFilter GetFilter(const PCKAssetFile& file)
+PlatformBase::FileDialogBase::FileFilter GetFilter(const PCKAssetFile& file)
 {
 	std::array<const char*, 2> ext = file.getPreferredExtension();
 
@@ -188,20 +204,17 @@ SDL_DialogFileFilter GetFilter(const PCKAssetFile& file)
 	static std::string patternStr;
 
 	nameStr = std::string(file.getAssetTypeStringDisplay()) + " File | *." + ext[0];
-	patternStr = std::string(ext[0]);
+	patternStr = ext[0];
 
 	if (ext[1] != nullptr) {
 		nameStr += ";*." + std::string(ext[1]);
 		patternStr += ";" + std::string(ext[1]);
 	}
 
-	SDL_DialogFileFilter filter{};
-	filter.name = nameStr.c_str();
-	filter.pattern = patternStr.c_str();
-	return filter;
+	return { nameStr, patternStr };
 }
 
-bool SetDataFromFile(PCKAssetFile& file)
+bool SetFileDataDialog(PCKAssetFile& file)
 {
 	std::filesystem::path filePath(file.getPath());
 
@@ -211,12 +224,14 @@ bool SetDataFromFile(PCKAssetFile& file)
 
 	std::string label = std::string(file.getAssetTypeString()) + " File | *." + ext + " File";
 
-	SDL_DialogFileFilter filters[] = {
+	PlatformBase::FileDialogBase::FileFilter filters[] = {
 		GetFilter(file),
 		{ "All Files", "*" }
 	};
 
-	std::string inpath = IO::OpenFileDialog(GetWindow(), filters);
+	const auto& platform = gApp->GetPlatform();
+	auto& fileDialog = platform->mDialog;
+	std::string inpath = fileDialog.OpenFile({ filters[0], filters[1] });
 
 	if (!inpath.empty())
 	{
@@ -238,21 +253,18 @@ bool SetDataFromFile(PCKAssetFile& file)
 		}
 	}
 
-	ShowCancelledMessage();
-
+	platform->ShowCancelledMessage();
 	return false;
 }
 
-void SaveFilePropertiesToFile(const PCKAssetFile& file, const std::string& outpath)
+void WriteFileProperties(const PCKAssetFile& file, const std::string& outpath)
 {
 	if (outpath.empty())
-	{
 		return;
-	}
 
 	std::u16string propertyData;
 	for (const auto& [key, val] : file.getProperties()) {
-		propertyData += IO::ToUTF16(key) + u' ' + val + u'\n';
+		propertyData += Binary::ToUTF16(key) + u' ' + val + u'\n';
 	}
 
 	std::ofstream propFile(outpath, std::ios::binary);
@@ -265,42 +277,46 @@ void SaveFilePropertiesToFile(const PCKAssetFile& file, const std::string& outpa
 	}
 }
 
-void SaveFilePropertiesDialog(const PCKAssetFile& file)
+void WriteFilePropertiesDialog(const PCKAssetFile& file)
 {
 	static const std::string nameStr = "Text File | *.txt";
-	static const std::string patternStr = "txt";
+	static const std::string patternStr = "*.txt";
 
-	SDL_DialogFileFilter filter{};
-	filter.name = nameStr.c_str();
-	filter.pattern = patternStr.c_str();
+	PlatformBase::FileDialogBase::FileFilter filter{ nameStr, patternStr };
 
-	std::string outpath = IO::SaveFileDialog(GetWindow(), &filter, std::filesystem::path(file.getPath()).filename().string() + ".txt");
+	const auto& platform = gApp->GetPlatform();
+	auto& fileDialog = platform->mDialog;
+	std::string outpath = fileDialog.SaveFile({ filter }, std::filesystem::path(file.getPath()).filename().string() + ".txt");
 
 	if (!outpath.empty())
 	{
-		SaveFilePropertiesToFile(file, outpath);
-		ShowSuccessMessage();
+		WriteFileProperties(file, outpath);
+		platform->ShowSuccessMessage();
 	}
 	else
-		ShowCancelledMessage();
+		platform->ShowCancelledMessage();
 }
 
-void ExtractFileDataDialog(const PCKAssetFile& file, bool includeProperties)
+void WriteFileDataDialog(const PCKAssetFile& file, bool includeProperties)
 {
 	std::filesystem::path filePath(file.getPath());
 
-	SDL_DialogFileFilter filter = GetFilter(file);
+	PlatformBase::FileDialogBase::FileFilter filter = GetFilter(file);
 
-	std::string outPath{};
+	const auto& platform = gApp->GetPlatform();
+	auto& fileDialog = platform->mDialog;
 
-	// this is very dumb and I'll have to give this a rewrite sometime
-	if (includeProperties)
-		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), filePath.filename().string(), true, file.getProperties());
-	else
-		outPath = IO::SaveFileDialogWithProperties(GetWindow(), &filter, file.getData(), filePath.filename().string());
+	std::string outPath = fileDialog.SaveFile({ filter }, filePath.filename().string());
 
 	if (!outPath.empty())
-		ShowSuccessMessage();
+	{
+		if(includeProperties)
+			IO::WriteFile(outPath, file.getData(), file.getProperties());
+		else
+			IO::WriteFile(outPath, file.getData());
+
+		platform->ShowSuccessMessage();
+	}
 	else
-		ShowCancelledMessage();
+		platform->ShowCancelledMessage();
 }

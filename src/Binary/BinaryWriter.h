@@ -1,13 +1,12 @@
 #pragma once
 
 #include <fstream>
-#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <vector>
 #include <locale>
 #include <codecvt>
-#include "IO.h"
+#include "Binary.h"
 
 // Barebones binary writer because it's nice I guess; inspired by miku666/NessieHax/nullptr's EndiannessAwareBinaryWriter from the OMI/PCK Studio code <3
 class BinaryWriter
@@ -20,20 +19,25 @@ public:
 			mStream.close();
 	}
 
-	const void SetEndianness(IO::Endianness endianness);
+	// Sets endianness of the writer
+	const void SetEndianness(Binary::Endianness endianness);
 
+	// Writes 8 bit unsigned int
 	void WriteInt8(const uint8_t value);
+
+	// Writes 16 bit unsigned int
 	void WriteInt16(const uint16_t value);
+
+	// Writes 32 bit unsigned int
 	void WriteInt32(const uint32_t value);
 
+	// Writes U16 string of length
 	void WriteU16String(const std::u16string& utf16str);
 
-	static uint16_t SwapInt16(const uint16_t value);
-	static uint32_t SwapInt32(const uint32_t value);
-
+	// Wries data from buffer of a given size
 	const void WriteData(const void* buffer, size_t size);
 
 private:
 	std::ofstream mStream;
-	IO::Endianness mEndianness = IO::Endianness::LITTLE; // default to little since Little is used by more editions of the game
+	Binary::Endianness mEndianness = Binary::Endianness::LITTLE; // default to little since Little is used by more editions of the game
 };
