@@ -18,6 +18,28 @@ bool UIImGui::InitBackends(void* platformData, void* rendererData) {
             platformBackend->Shutdown();
         return false;
     }
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.CellPadding = ImVec2(0, 0);
+
+    ImFontConfig config;
+    config.MergeMode = false;
+    config.PixelSnapH = true;
+
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-latin.ttf", 18.0f, &config);
+
+    config.MergeMode = true;
+
+    // Merge Chinese (Simplified)
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
+    // Merge Chinese (Traditional)
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
+    // Merge Japanese
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
+    // Merge Korean
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesKorean());
+
+    ImGui::GetIO().Fonts->Build();
     return true;
 }
 
