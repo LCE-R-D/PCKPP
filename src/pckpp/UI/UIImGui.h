@@ -27,6 +27,9 @@ public:
 
     // Runs ImGui shutdown/clean up event
     void Shutdown() override;
+
+    // Renders the file tree in the main program form using ImGui elements
+    void RenderFileTree() override;
 };
 
 // Helpful opertaors for Vector stuff

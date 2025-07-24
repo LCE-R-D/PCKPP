@@ -6,7 +6,7 @@
 #include "UI/UIImGui.h"
 #include "Backends/ImGuiSDLPlatformBackend.hpp"
 #include "Backends/ImGuiOpenGLRendererBackend.hpp"
-#include "Program.h"
+#include "Program/Program.h"
 
 int main(int argc, char* argv[]) {
     if (!gApp->Init(argc, argv))

@@ -2,12 +2,12 @@
 
 #include <string>
 #include <memory>
-#include "../PCK/PCKFile.h"
 #include "../Graphics/GraphicsBase.h"
 #include "../Platform/PlatformBase.h"
 #include "../Backends/PlatformBackend.h"
 #include "../Backends/RendererBackend.h"
 #include "../UI/UIBase.h"
+#include "../Program/ProgramInstance.h"
 
 template<typename TPlatform, typename TGraphics, typename TUI>
 class Application {
@@ -37,14 +37,10 @@ public:
     // Cleanup any core resources
     void Shutdown();
 
-    // Get current PCK file; TODO: make this support multiple pcks
-    PCKFile* CurrentPCKFile();
-
-    // Loads PCK File from path
-    void LoadPCKFile(const std::string& filepath);
-
     // Application Update
     void Update();
+
+    ProgramInstance* GetInstance() const;
 
     // Gets Platform framework from the application
     TPlatform* GetPlatform() const;
@@ -56,7 +52,7 @@ public:
     TUI* GetUI() const;
 
 private:
-    std::unique_ptr<PCKFile> mCurrentPCKFile;
+    std::unique_ptr<ProgramInstance> mInstance;
     std::unique_ptr<TPlatform> mPlatform;
     std::unique_ptr<TGraphics> mGraphics;
     std::unique_ptr<TUI> mUI;

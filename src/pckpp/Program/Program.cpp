@@ -1,7 +1,7 @@
 ﻿#include "Program.h"
-#include "Application/Application.h"
-#include "UI/Tree/TreeFunctions.h"
-#include "UI/Menu/MenuFunctions.h"
+#include "../Application/Application.h"
+#include "../UI/Tree/TreeFunctions.h"
+#include "../UI/Menu/MenuFunctions.h"
 #include <map>
 #include <sstream>
 
@@ -15,11 +15,7 @@ Texture gFolderIcon;
 Texture gPreviewTexture{};
 std::string gPreviewTitle = "Preview";
 static const PCKAssetFile* gLastPreviewedFile = nullptr;
-
-// Instance globals
-static std::string gSelectedNodePath;
-static bool gHasXMLSupport{ false };
-static Binary::Endianness gPCKEndianness{ Binary::Endianness::LITTLE };
+ProgramInstance* gInstance = nullptr;
 
 void ProgramSetup() {
 	gFolderIcon = gApp->GetGraphics()->LoadTextureFromFile("assets/icons/NODE_FOLDER.png", TextureFilter::LINEAR_MIPMAP_LINEAR);
@@ -53,19 +49,13 @@ void ProgramSetup() {
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesKorean());
 
 	ImGui::GetIO().Fonts->Build();
+
+	gInstance = new ProgramInstance();
 }
 
 void ResetProgramData() {
+	gInstance->Reset();
 
-	PCKFile* pckFile = gApp->CurrentPCKFile();
-
-	if (pckFile)
-	{
-		gHasXMLSupport = pckFile->getXMLSupport();
-		gPCKEndianness = pckFile->getEndianness();
-	}
-
-	gSelectedNodePath = "";
 	gVisibleNodes.clear();
 	gTreeNodes.clear();
 }
@@ -79,7 +69,7 @@ void ProgramCleanup() {
 }
 
 void HandleMenuBar() {
-	PCKFile* pckFile = gApp->CurrentPCKFile();
+	PCKFile* pckFile = gApp->GetInstance()->GetCurrentPCKFile();
 
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
@@ -89,10 +79,10 @@ void HandleMenuBar() {
 			if (pckFile)
 			{
 				if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, pckFile)) {
-					SavePCK(gTreeNodes, gPCKEndianness, pckFile->getFilePath());
+					SavePCK(gTreeNodes, gInstance->pckEndianness, pckFile->getFilePath());
 				}
 				if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, pckFile)) {
-					SavePCK(gTreeNodes, gPCKEndianness, "", pckFile->getFileName());
+					SavePCK(gTreeNodes, gInstance->pckEndianness, "", pckFile->getFileName());
 				}
 			}
 			ImGui::EndMenu();
@@ -103,19 +93,19 @@ void HandleMenuBar() {
 			if (ImGui::BeginMenu("PCK"))
 			{
 				ImGui::Text("PCK Format:");
-				if (ImGui::RadioButton("Little Endian (Xbox One, PS4, PSVita, Nintendo Switch)", gPCKEndianness == Binary::Endianness::LITTLE))
+				if (ImGui::RadioButton("Little Endian (Xbox One, PS4, PSVita, Nintendo Switch)", gInstance->pckEndianness == Binary::Endianness::LITTLE))
 				{
-					gPCKEndianness = Binary::Endianness::LITTLE;
+					gInstance->pckEndianness = Binary::Endianness::LITTLE;
 				}
 
-				if (ImGui::RadioButton("Big Endian (Xbox 360, PS3, Wii U)", gPCKEndianness == Binary::Endianness::BIG))
+				if (ImGui::RadioButton("Big Endian (Xbox 360, PS3, Wii U)", gInstance->pckEndianness == Binary::Endianness::BIG))
 				{
-					gPCKEndianness = Binary::Endianness::BIG;
+					gInstance->pckEndianness = Binary::Endianness::BIG;
 				}
 
 				ImGui::NewLine();
-				if (ImGui::Checkbox("Full BOX Support (for Skins)", &gHasXMLSupport)) {
-					pckFile->setXMLSupport(gHasXMLSupport);
+				if (ImGui::Checkbox("Full BOX Support (for Skins)", &gInstance->hasXMLSupport)) {
+					pckFile->setXMLSupport(gInstance->hasXMLSupport);
 				}
 
 				ImGui::EndMenu();
@@ -127,14 +117,14 @@ void HandleMenuBar() {
 
 void HandleInput()
 {
-	PCKFile* pckFile = gApp->CurrentPCKFile();
+	PCKFile* pckFile = gApp->GetInstance()->GetCurrentPCKFile();
 
 	const auto& platform = gApp->GetPlatform();
 
 	// make sure to pass false or else it will trigger multiple times
 	if (pckFile && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
 		if (platform->ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
-			if (FileTreeNode* node = FindNodeByPath(gSelectedNodePath, gTreeNodes))
+			if (FileTreeNode* node = FindNodeByPath(gInstance->selectedNodePath, gTreeNodes))
 			{
 				DeleteNode(*node, gTreeNodes);
 				TreeToPCKFileCollection(gTreeNodes);
@@ -150,10 +140,10 @@ void HandleInput()
 			OpenPCKFileDialog();
 		}
 		else if (pckFile && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gTreeNodes, gPCKEndianness, pckFile->getFilePath()); // Save
+			SavePCK(gTreeNodes, gInstance->pckEndianness, pckFile->getFilePath()); // Save
 		}
 		else if (pckFile && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gTreeNodes, gPCKEndianness, "", pckFile->getFileName()); // Save As
+			SavePCK(gTreeNodes, gInstance->pckEndianness, "", pckFile->getFileName()); // Save As
 		}
 	}
 }
@@ -428,7 +418,7 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 		visibleList->push_back(&node); // adds node to visible nodes vector, but only when needed
 
 	bool isFolder = (node.file == nullptr);
-	bool isSelected = (node.path == gSelectedNodePath);
+	bool isSelected = (node.path == gInstance->selectedNodePath);
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
 	if (isSelected)
@@ -442,13 +432,13 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 		ImGui::Image((void*)(intptr_t)gFolderIcon.id, ImVec2(48, 48));
 		ImGui::SameLine();
 
-		if (node.path == gSelectedNodePath && (openFolder || closeFolder))
+		if (node.path == gInstance->selectedNodePath && (openFolder || closeFolder))
 			ImGui::SetNextItemOpen(openFolder, ImGuiCond_Always);
 
 		bool open = ImGui::TreeNodeEx(node.path.c_str(), flags);
 
 		if (IsClicked())
-			gSelectedNodePath = node.path;
+			gInstance->selectedNodePath = node.path;
 
 		HandlePCKNodeContextMenu(node);
 
@@ -464,10 +454,10 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 		ImGui::Image((void*)(intptr_t)gFileIcons[file.getAssetType()].id, ImVec2(48, 48));
 		ImGui::SameLine();
 		if (ImGui::Selectable((std::filesystem::path(file.getPath()).filename().string() + "###" + file.getPath()).c_str(), isSelected))
-			gSelectedNodePath = node.path;
+			gInstance->selectedNodePath = node.path;
 
 		if (IsClicked())
-			gSelectedNodePath = node.path;
+			gInstance->selectedNodePath = node.path;
 
 		HandlePCKNodeContextMenu(node);
 	}
@@ -476,7 +466,7 @@ static void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* vis
 // Renders the file tree... duh
 static void RenderFileTree() {
 
-	PCKFile* pckFile = gApp->CurrentPCKFile();
+	PCKFile* pckFile = gApp->GetInstance()->GetCurrentPCKFile();
 
 	if (!pckFile) return;
 
@@ -490,7 +480,7 @@ static void RenderFileTree() {
 	bool shouldOpenFolder = false;
 	bool shouldCloseFolder = false;
 
-	if (ImGui::IsWindowFocused() && !gSelectedNodePath.empty()) {
+	if (ImGui::IsWindowFocused() && !gInstance->selectedNodePath.empty()) {
 		shouldOpenFolder = ImGui::IsKeyPressed(ImGuiKey_RightArrow);
 		shouldCloseFolder = !shouldOpenFolder && ImGui::IsKeyPressed(ImGuiKey_LeftArrow);
 	}
@@ -501,29 +491,29 @@ static void RenderFileTree() {
 	static int selectedIndex = -1;
 	if (ImGui::IsWindowFocused() && !gVisibleNodes.empty()) {
 		for (int i = 0; i < (int)gVisibleNodes.size(); ++i) {
-			if (gVisibleNodes[i]->path == gSelectedNodePath) {
+			if (gVisibleNodes[i]->path == gInstance->selectedNodePath) {
 				selectedIndex = i;
 				break;
 			}
 		}
 
-		std::string previousPath = gSelectedNodePath;
+		std::string previousPath = gInstance->selectedNodePath;
 		if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
 			selectedIndex = std::max(0, selectedIndex - 1);
-			gSelectedNodePath = gVisibleNodes[selectedIndex]->path;
+			gInstance->selectedNodePath = gVisibleNodes[selectedIndex]->path;
 		}
 		else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
 			selectedIndex = std::min((int)gVisibleNodes.size() - 1, selectedIndex + 1);
-			gSelectedNodePath = gVisibleNodes[selectedIndex]->path;
+			gInstance->selectedNodePath = gVisibleNodes[selectedIndex]->path;
 		}
-		if (gSelectedNodePath != previousPath)
+		if (gInstance->selectedNodePath != previousPath)
 			shouldScroll = true;
 	}
 
 	const PCKAssetFile* selectedFile = nullptr;
 	for (const auto& _ : gTreeNodes) {
 
-		FileTreeNode* selectedNode = FindNodeByPath(gSelectedNodePath, gTreeNodes);
+		FileTreeNode* selectedNode = FindNodeByPath(gInstance->selectedNodePath, gTreeNodes);
 
 		if (selectedNode && selectedNode->file)
 			selectedFile = selectedNode->file;

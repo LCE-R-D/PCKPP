@@ -17,4 +17,7 @@ public:
 
 	// Runs the shutdown/clean up event
 	virtual void Shutdown() = 0;
+
+	// Renders the file tree in the main program form
+	virtual void RenderFileTree() = 0;
 };

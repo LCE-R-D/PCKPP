@@ -1,5 +1,5 @@
 #include "Application.h"
-#include "../Program.h"
+#include "../Program/Program.h"
 #include <fstream>
 #include <iostream>
 
@@ -32,34 +32,17 @@ void Application<TPlatform, TGraphics, TUI>::SetRendererBackend(std::unique_ptr<
 
 template<typename TPlatform, typename TGraphics, typename TUI>
 bool Application<TPlatform, TGraphics, TUI>::Init(int argc, char* argv[]) {
-    std::filesystem::current_path(SDL_GetBasePath());
-
     if (argc > 1) {
-        LoadPCKFile(argv[1]);
+        mInstance.get()->LoadPCKFile(argv[1]);
     }
 
     mPlatform = std::make_unique<TPlatform>();
     mGraphics = std::make_unique<TGraphics>();
     mUI = std::make_unique<TUI>();
+    mInstance = std::make_unique<ProgramInstance>();
 
     initialized = true;
     return true;
-}
-
-template<typename TPlatform, typename TGraphics, typename TUI>
-PCKFile* Application<TPlatform, TGraphics, TUI>::CurrentPCKFile() {
-    return mCurrentPCKFile.get();
-}
-
-template<typename TPlatform, typename TGraphics, typename TUI>
-void Application<TPlatform, TGraphics, TUI>::LoadPCKFile(const std::string& filepath) {
-    try {
-        mCurrentPCKFile = std::make_unique<PCKFile>();
-        mCurrentPCKFile->Read(filepath);
-    }
-    catch (...) {
-        std::cerr << "Failed to load PCK file: " << filepath << "\n";
-    }
 }
 
 template<typename TPlatform, typename TGraphics, typename TUI>
@@ -76,6 +59,12 @@ template<typename TPlatform, typename TGraphics, typename TUI>
 TPlatform* Application<TPlatform, TGraphics, TUI>::GetPlatform() const
 {
     return mPlatform.get();
+}
+
+template<typename TPlatform, typename TGraphics, typename TUI>
+ProgramInstance* Application<TPlatform, TGraphics, TUI>::GetInstance() const
+{
+    return mInstance.get();
 }
 
 template<typename TPlatform, typename TGraphics, typename TUI>

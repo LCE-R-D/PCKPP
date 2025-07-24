@@ -59,3 +59,6 @@ void UIImGui::Shutdown() {
     }
     ImGui::DestroyContext();
 }
+
+void UIImGui::RenderFileTree()
+{ }

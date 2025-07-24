@@ -1,5 +1,5 @@
 #include "../../Application/Application.h"
-#include "../../Program.h"
+#include "../../Program/Program.h"
 #include "MenuFunctions.h"
 #include <array>
 #include <fstream>
@@ -18,7 +18,7 @@ void OpenPCKFile(const std::string& inpath)
 	auto& fileDialog = gApp->GetPlatform()->mDialog;
 
 	try {
-		gApp->LoadPCKFile(inpath);
+		gApp->GetInstance()->LoadPCKFile(inpath);
 	}
 	catch (const std::exception& e) {
 		fileDialog.ShowError("Error", e.what());
@@ -47,7 +47,7 @@ void OpenPCKFileDialog()
 
 void SavePCKFileDialog(Binary::Endianness endianness, const std::string& defaultName)
 {
-	PCKFile* pckFile = gApp->CurrentPCKFile();
+	PCKFile* pckFile = gApp->GetInstance()->GetCurrentPCKFile();
 
 	const auto& platform = gApp->GetPlatform();
 	auto& fileDialog = platform->mDialog;
@@ -65,7 +65,7 @@ void SavePCKFileDialog(Binary::Endianness endianness, const std::string& default
 
 void SavePCKFile(const std::string& outpath, Binary::Endianness endianness)
 {
-	PCKFile* pckFile = gApp->CurrentPCKFile();
+	PCKFile* pckFile = gApp->GetInstance()->GetCurrentPCKFile();
 
 	const auto& platform = gApp->GetPlatform();
 	auto& fileDialog = platform->mDialog;

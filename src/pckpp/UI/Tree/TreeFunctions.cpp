@@ -4,7 +4,7 @@
 
 void TreeToPCKFileCollection(std::vector<FileTreeNode>& treeNodes)
 {
-	PCKFile* pckFile = gApp->CurrentPCKFile();
+	PCKFile* pckFile = gApp->GetInstance()->GetCurrentPCKFile();
 
 	if (!pckFile)
 		return;
@@ -84,7 +84,7 @@ void SortTree(FileTreeNode& node) {
 }
 
 void BuildFileTree(std::vector<FileTreeNode>& nodes) {
-	PCKFile* pckFile = gApp->CurrentPCKFile();
+	PCKFile* pckFile = gApp->GetInstance()->GetCurrentPCKFile();
 
 	if (!pckFile)
 		return;

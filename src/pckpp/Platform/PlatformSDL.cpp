@@ -3,6 +3,7 @@
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
+#include <filesystem>
 
 PlatformSDL::~PlatformSDL() {
 	Shutdown();
@@ -13,6 +14,8 @@ bool PlatformSDL::Init(const char* title, int width, int height) {
 		SDL_Log("SDL_Init failed: %s", SDL_GetError());
 		return false;
 	}
+
+	std::filesystem::current_path(SDL_GetBasePath());
 
 	mWindow = SDL_CreateWindow(title, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	if (!mWindow) {
