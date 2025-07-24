@@ -27,6 +27,8 @@ void ProgramSetup() {
 		std::string path = "assets/icons/FILE_" + name + ".png";
 		gFileIcons[type] = gApp->GetGraphics()->LoadTextureFromFile(path, TextureFilter::LINEAR_MIPMAP_LINEAR);
 	}
+
+	gInstance = new ProgramInstance();
 }
 
 void ResetProgramData() {
