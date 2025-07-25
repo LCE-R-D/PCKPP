@@ -14,7 +14,7 @@ ProgramInstance* gInstance = nullptr;
 bool IsClicked()
 {
 	return (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right)) ||
-		// for context support; selecting and opening a node when a context menu is already opened
+		// for context support; selecting and opening a context menu when a context menu is already opened
 		(ImGui::IsMouseReleased(ImGuiMouseButton_Right) && ImGui::IsItemHovered());
 }
 
@@ -47,24 +47,26 @@ bool UIImGui::InitBackends(void* platformData, void* rendererData) {
     ImGuiStyle& style = ImGui::GetStyle();
     style.CellPadding = ImVec2(0, 0);
 
+	ImFontAtlas* fonts = ImGui::GetIO().Fonts;
+
     ImFontConfig config;
     config.MergeMode = false;
     config.PixelSnapH = true;
 
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-latin.ttf", 18.0f, &config);
+	fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-latin.ttf", 18.0f, &config);
 
     config.MergeMode = true;
 
     // Merge Chinese (Simplified)
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
+	fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, fonts->GetGlyphRangesChineseSimplifiedCommon());
     // Merge Chinese (Traditional)
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
+	fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, fonts->GetGlyphRangesChineseFull());
     // Merge Japanese
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
+	fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, fonts->GetGlyphRangesJapanese());
     // Merge Korean
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesKorean());
+	fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, fonts->GetGlyphRangesKorean());
 
-    ImGui::GetIO().Fonts->Build();
+	fonts->Build();
     return true;
 }
 
