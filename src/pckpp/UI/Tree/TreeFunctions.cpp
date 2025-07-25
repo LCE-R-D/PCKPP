@@ -112,20 +112,28 @@ void BuildFileTree() {
 		}
 
 		FileTreeNode* current = &root;
+		std::filesystem::path currentPath = root.path;
+
 		for (const auto& part : parts) {
 			if (part.empty()) continue;
+
+			currentPath /= part;
+
 			auto it = std::find_if(current->children.begin(), current->children.end(), [&](const FileTreeNode& n) {
-				return !n.file && n.path == part;
+				return !n.file && n.path == currentPath.string();
 				});
+
 			if (it == current->children.end()) {
-				current->children.push_back(FileTreeNode{ part, nullptr });
+				current->children.push_back(FileTreeNode{ currentPath.string(), nullptr });
 				current = &current->children.back();
 			}
 			else {
 				current = &(*it);
 			}
 		}
-		current->children.push_back(FileTreeNode{ file.getPath(), const_cast<PCKAssetFile*>(&file) });
+
+		std::filesystem::path filePath = file.getPath();
+		current->children.push_back(FileTreeNode{ filePath.string(), const_cast<PCKAssetFile*>(&file) });
 	}
 
 	SortTree(root);
@@ -180,7 +188,7 @@ void WriteFolder(const FileTreeNode& node, bool includeProperties)
 			{
 				if (!n.file)
 				{
-					std::string folderPath = currentPath + "/" + n.path;
+					std::string folderPath = currentPath + "/" + std::filesystem::path(n.path).filename().string();
 					std::filesystem::create_directories(folderPath);
 
 					for (const auto& child : n.children)
