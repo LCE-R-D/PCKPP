@@ -231,7 +231,7 @@ void UIImGui::RenderMenuBar()
 
 void UIImGui::HandleInput()
 {
-	//Since this is called first before the proper rendering, grab the instance and PCK file
+	//Since this is called first before rendering, grab the instance
 	if(!gInstance) 
 		gInstance = gApp->GetInstance();
 	PCKFile* pckFile = gInstance->GetCurrentPCKFile();

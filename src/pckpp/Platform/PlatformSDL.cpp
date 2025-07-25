@@ -4,6 +4,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <filesystem>
+#include "../Application/Application.h"
 
 PlatformSDL::~PlatformSDL() {
 	Shutdown();
@@ -56,8 +57,20 @@ void PlatformSDL::PollEvents(PlatformBackend* backend) {
 	while (SDL_PollEvent(&event)) {
 		if (backend)
 			backend->ProcessEvent(&event);
-		if (event.type == SDL_EVENT_QUIT) {
-			mShouldClose = true;
+
+		switch (event.type)
+		{
+			case SDL_EVENT_QUIT:
+				mShouldClose = true;
+				break;
+			case SDL_EVENT_DROP_FILE:
+				if (gApp->GetInstance()->GetCurrentPCKFile() &&
+					!gApp->GetPlatform()->ShowYesNoMessagePrompt("Open PCK?", "Are you sure you want to open this PCK file? Your unsaved changes will be lost."))
+					break; // if no, then abort
+				gApp->GetInstance()->LoadPCKFile(event.drop.data);
+				break;
+			default:
+				break;
 		}
 	}
 }
