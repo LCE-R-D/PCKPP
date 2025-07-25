@@ -3,6 +3,7 @@
 #include <sstream>
 #include "Menu/MenuFunctions.h"
 #include "Tree/TreeFunctions.h"
+#include "../Util/Util.h"
 
 // Preview globals
 std::string gPreviewTitle = "Preview";
@@ -517,53 +518,131 @@ void UIImGui::RenderPropertiesWindow(const PCKAssetFile& file)
 	ImGui::End();
 }
 
+bool IsDescendantPath(const std::string& potentialChild, const std::string& potentialParent) {
+	std::filesystem::path childPath = std::filesystem::weakly_canonical(potentialChild);
+	std::filesystem::path parentPath = std::filesystem::weakly_canonical(potentialParent);
+
+	auto mismatch = std::mismatch(parentPath.begin(), parentPath.end(), childPath.begin(), childPath.end());
+	return mismatch.first == parentPath.end();
+}
+
+void UpdateNodePathRecursive(FileTreeNode& node, const std::string& newBasePath)
+{
+	std::filesystem::path oldBase = node.path;
+	node.path = newBasePath;
+
+	if (node.file)
+		node.file->setPath(newBasePath);
+
+	for (auto& child : node.children) {
+		std::filesystem::path rel = std::filesystem::relative(child.path, oldBase);
+		UpdateNodePathRecursive(child, (std::filesystem::path(newBasePath) / rel).string());
+	}
+}
+
 void UIImGui::RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList, bool shouldScroll, bool openFolder, bool closeFolder)
 {
 	if (visibleList)
-		visibleList->push_back(&node); // adds node to visible nodes vector, but only when needed
+		visibleList->push_back(&node);
 
-	bool isFolder = (node.file == nullptr);
-	bool isSelected = (node.path == gInstance->selectedNodePath);
-
+	const bool isFolder = (node.file == nullptr);
+	const bool isSelected = (node.path == gInstance->selectedNodePath);
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
-	if (isSelected)
-	{
+	if (isSelected) {
 		flags |= ImGuiTreeNodeFlags_Selected;
 		ScrollToNode(shouldScroll);
 	}
 
-	if (isFolder) {
-		ImGui::PushID(node.path.c_str());
+	ImGui::PushID(node.path.c_str());
+
+	if (isFolder)
+	{
 		ImGui::Image((void*)(intptr_t)gApp->GetFolderIcon().id, ImVec2(48, 48));
 		ImGui::SameLine();
 
 		if (node.path == gInstance->selectedNodePath && (openFolder || closeFolder))
 			ImGui::SetNextItemOpen(openFolder, ImGuiCond_Always);
 
-		bool open = ImGui::TreeNodeEx(node.path.c_str(), flags);
+		std::string folderName = std::filesystem::path(node.path).filename().string();
+		bool open = ImGui::TreeNodeEx((folderName + "###" + node.path).c_str(), flags);
 
 		if (IsClicked())
 			gInstance->selectedNodePath = node.path;
 
 		gApp->GetUI()->RenderContextMenu(node);
+
+		// Drag n' drop babyyyyyyyyyyyyyyyyyyyyyy
+		if (ImGui::BeginDragDropSource()) {
+			ImGui::SetDragDropPayload("FILE_TREE_NODE_PATH", node.path.c_str(), node.path.size() + 1);
+			ImGui::Text("Move: %s", folderName.c_str());
+			ImGui::EndDragDropSource();
+		}
+
+		if (ImGui::BeginDragDropTarget()) {
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("FILE_TREE_NODE_PATH")) {
+				std::string draggedPath((const char*)payload->Data);
+				std::string targetFolder = node.path;
+
+				if (draggedPath != node.path && draggedPath != targetFolder && !(IsDescendantPath(targetFolder, draggedPath))) {
+					FileTreeNode* draggedNode = FindNodeByPath(draggedPath, gApp->GetInstance()->treeNodes);
+
+					if (draggedNode) {
+						std::filesystem::path newPath = std::filesystem::path(targetFolder) /
+							std::filesystem::path(draggedNode->path).filename();
+
+						UpdateNodePathRecursive(*draggedNode, newPath.string());
+					}
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
 
 		if (open) {
 			for (auto& child : node.children)
 				RenderNode(child, visibleList, shouldScroll, openFolder, closeFolder);
 			ImGui::TreePop();
 		}
-		ImGui::PopID();
 	}
-	else {
+	else // File Nodes
+	{
 		const PCKAssetFile& file = *node.file;
 		ImGui::Image((void*)(intptr_t)gApp->GetFileIcon(file.getAssetType()).id, ImVec2(48, 48));
 		ImGui::SameLine();
-		if (ImGui::Selectable((std::filesystem::path(file.getPath()).filename().string() + "###" + file.getPath()).c_str(), isSelected))
-			gInstance->selectedNodePath = node.path;
 
-		if (IsClicked())
+		std::string label = std::filesystem::path(file.getPath()).filename().string();
+		std::string id = label + "###" + file.getPath();
+
+		if (ImGui::Selectable(id.c_str(), isSelected) || IsClicked())
 			gInstance->selectedNodePath = node.path;
 
 		gApp->GetUI()->RenderContextMenu(node);
+
+		// Drag n' drop agaaaaaaaaaainnnnnnnnnnn
+		if (ImGui::BeginDragDropSource()) {
+			ImGui::SetDragDropPayload("FILE_TREE_NODE_PATH", node.path.c_str(), node.path.size() + 1);
+			ImGui::Text("Move: %s", label.c_str());
+			ImGui::EndDragDropSource();
+		}
+
+		if (ImGui::BeginDragDropTarget()) {
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("FILE_TREE_NODE_PATH")) {
+				std::string draggedPath((const char*)payload->Data);
+				std::string targetFolder = std::filesystem::path(node.path).parent_path().string();
+
+				if (draggedPath != node.path && draggedPath != targetFolder && !(IsDescendantPath(targetFolder, draggedPath))) {
+					FileTreeNode* draggedNode = FindNodeByPath(draggedPath, gApp->GetInstance()->treeNodes);
+
+					if (draggedNode) {
+						std::filesystem::path newPath = std::filesystem::path(targetFolder) /
+							std::filesystem::path(draggedNode->path).filename();
+
+						UpdateNodePathRecursive(*draggedNode, newPath.string());
+					}
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
 	}
+
+	ImGui::PopID();
 }
