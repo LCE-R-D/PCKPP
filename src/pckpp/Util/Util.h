@@ -16,3 +16,8 @@ namespace IO
 	// Write file to disk from byte vector
 	void WriteFile(const std::string& path, const std::vector<unsigned char>& fileData, const std::vector<PCKAssetFile::Property>& properties = {});
 }
+
+namespace String
+{
+	bool startsWith(const std::string& str, const std::string& prefix);
+}

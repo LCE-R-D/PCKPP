@@ -1,4 +1,4 @@
-#include "IO.h"
+#include "Util.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -36,4 +36,8 @@ void IO::WriteFile(const std::string& path, const std::vector<unsigned char>& fi
             propFile.close();
         }
     }
+}
+
+bool String::startsWith(const std::string& str, const std::string& prefix) {
+    return str.size() >= prefix.size() && str.compare(0, prefix.size(), prefix) == 0;
 }

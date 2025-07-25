@@ -4,7 +4,7 @@
 #include <array>
 #include <fstream>
 #include <sstream>
-#include "../../Util/IO.h"
+#include "../../Util/Util.h"
 
 static PlatformBase::FileDialogBase::FileFilter pckFilter[] = {
 	{ "Minecraft LCE DLC Files (*.pck)", "pck" }
