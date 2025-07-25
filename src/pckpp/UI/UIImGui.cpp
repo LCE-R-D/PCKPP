@@ -10,14 +10,11 @@ static const PCKAssetFile* gLastPreviewedFile = nullptr;
 
 // globals for this file
 ProgramInstance* gInstance = nullptr;
-PCKFile* gPCKFile = nullptr;
-PlatformBackend* gPlatformBackend = nullptr;
-RendererBackend* gRendererBackend = nullptr;
 
 bool IsClicked()
 {
 	return (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right)) ||
-		// for context support; selecting and opening a context menu when a context menu is already opened
+		// for context support; selecting and opening a node when a context menu is already opened
 		(ImGui::IsMouseReleased(ImGuiMouseButton_Right) && ImGui::IsItemHovered());
 }
 
@@ -34,14 +31,14 @@ bool UIImGui::Init() {
 }
 
 bool UIImGui::InitBackends(void* platformData, void* rendererData) {
-	gPlatformBackend = gApp->GetPlatformBackend();
-	gRendererBackend = gApp->GetRendererBackend();
+    PlatformBackend* platformBackend = gApp->GetPlatformBackend();
+    RendererBackend* rendererBackend = gApp->GetRendererBackend();
 
-    if (gPlatformBackend && !gPlatformBackend->Init(platformData))
+    if (platformBackend && !platformBackend->Init(platformData))
         return false;
-    if (gRendererBackend && !gRendererBackend->Init(rendererData)) {
-        if (gPlatformBackend)
-            gPlatformBackend->Shutdown();
+    if (rendererBackend && !rendererBackend->Init(rendererData)) {
+        if (platformBackend)
+            platformBackend->Shutdown();
         return false;
     }
 
@@ -50,54 +47,62 @@ bool UIImGui::InitBackends(void* platformData, void* rendererData) {
     ImGuiStyle& style = ImGui::GetStyle();
     style.CellPadding = ImVec2(0, 0);
 
-	ImFontAtlas* fonts = ImGui::GetIO().Fonts;
-
     ImFontConfig config;
     config.MergeMode = false;
     config.PixelSnapH = true;
 
-	fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-latin.ttf", 18.0f, &config);
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-latin.ttf", 18.0f, &config);
 
     config.MergeMode = true;
 
     // Merge Chinese (Simplified)
-    fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, fonts->GetGlyphRangesChineseSimplifiedCommon());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_cn.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
     // Merge Chinese (Traditional)
-	fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, fonts->GetGlyphRangesChineseFull());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-zh_tw.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
     // Merge Japanese
-	fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, fonts->GetGlyphRangesJapanese());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ja.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
     // Merge Korean
-	fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, fonts->GetGlyphRangesKorean());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ark-pixel-12px-monospaced-ko.ttf", 18.0f, &config, ImGui::GetIO().Fonts->GetGlyphRangesKorean());
 
-	fonts->Build();
+    ImGui::GetIO().Fonts->Build();
     return true;
 }
 
 void UIImGui::ProcessEvent(void* event) {
-    if (gPlatformBackend)
-        gPlatformBackend->ProcessEvent(event);
+    PlatformBackend* platformBackend = gApp->GetPlatformBackend();
+
+    if (platformBackend)
+        platformBackend->ProcessEvent(event);
 }
 
 void UIImGui::NewFrame() {
-    if (gPlatformBackend)
-        gPlatformBackend->NewFrame();
-    if (gRendererBackend)
-        gRendererBackend->NewFrame();
+    PlatformBackend* platformBackend = gApp->GetPlatformBackend();
+    RendererBackend* rendererBackend = gApp->GetRendererBackend();
+
+    if (platformBackend)
+        platformBackend->NewFrame();
+    if (rendererBackend)
+        rendererBackend->NewFrame();
     ImGui::NewFrame();
 }
 
 void UIImGui::Render() {
+    RendererBackend* rendererBackend = gApp->GetRendererBackend();
+
     ImGui::Render();
-    if (gRendererBackend)
-        gRendererBackend->Render();
+    if (rendererBackend)
+        rendererBackend->Render();
 }
 
 void UIImGui::Shutdown() {
-    if (gRendererBackend) {
-        gRendererBackend->Shutdown();
+    PlatformBackend* platformBackend = gApp->GetPlatformBackend();
+    RendererBackend* rendererBackend = gApp->GetRendererBackend();
+
+    if (rendererBackend) {
+        rendererBackend->Shutdown();
     }
-    if (gPlatformBackend) {
-        gPlatformBackend->Shutdown();
+    if (platformBackend) {
+        platformBackend->Shutdown();
     }
     ImGui::DestroyContext();
 }
@@ -176,24 +181,26 @@ void UIImGui::RenderPreviewWindow(const PCKAssetFile& file)
 
 void UIImGui::RenderMenuBar()
 {
+	PCKFile* pckFile = gInstance->GetCurrentPCKFile();
+
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
 				OpenPCKFileDialog();
 			}
-			if (gPCKFile)
+			if (pckFile)
 			{
-				if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, gPCKFile)) {
-					SavePCK(gInstance->treeNodes, gInstance->pckEndianness, gPCKFile->getFilePath());
+				if (ImGui::MenuItem("Save", "Ctrl+S", nullptr, pckFile)) {
+					SavePCK(gInstance->treeNodes, gInstance->pckEndianness, pckFile->getFilePath());
 				}
-				if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, gPCKFile)) {
-					SavePCK(gInstance->treeNodes, gInstance->pckEndianness, "", gPCKFile->getFileName());
+				if (ImGui::MenuItem("Save as", "Ctrl+Shift+S", nullptr, pckFile)) {
+					SavePCK(gInstance->treeNodes, gInstance->pckEndianness, "", pckFile->getFileName());
 				}
 			}
 			ImGui::EndMenu();
 		}
 
-		if (gPCKFile)
+		if (pckFile)
 		{
 			if (ImGui::BeginMenu("PCK"))
 			{
@@ -210,7 +217,7 @@ void UIImGui::RenderMenuBar()
 
 				ImGui::NewLine();
 				if (ImGui::Checkbox("Full BOX Support (for Skins)", &gInstance->hasXMLSupport)) {
-					gPCKFile->setXMLSupport(gInstance->hasXMLSupport);
+					pckFile->setXMLSupport(gInstance->hasXMLSupport);
 				}
 
 				ImGui::EndMenu();
@@ -223,13 +230,14 @@ void UIImGui::RenderMenuBar()
 void UIImGui::HandleInput()
 {
 	//Since this is called first before the proper rendering, grab the instance and PCK file
-	gInstance = gApp->GetInstance();
-	gPCKFile = gInstance->GetCurrentPCKFile();
+	if(!gInstance) 
+		gInstance = gApp->GetInstance();
+	PCKFile* pckFile = gInstance->GetCurrentPCKFile();
 
 	const auto& platform = gApp->GetPlatform();
 
 	// make sure to pass false or else it will trigger multiple times
-	if (gPCKFile && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+	if (pckFile && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
 		if (platform->ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too.")) {
 			if (FileTreeNode* node = FindNodeByPath(gInstance->selectedNodePath, gInstance->treeNodes))
 			{
@@ -246,25 +254,26 @@ void UIImGui::HandleInput()
 		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
 			OpenPCKFileDialog();
 		}
-		else if (gPCKFile && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gInstance->treeNodes, gInstance->pckEndianness, gPCKFile->getFilePath()); // Save
+		else if (pckFile && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+			SavePCK(gInstance->treeNodes, gInstance->pckEndianness, pckFile->getFilePath()); // Save
 		}
-		else if (gPCKFile && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gInstance->treeNodes, gInstance->pckEndianness, "", gPCKFile->getFileName()); // Save As
+		else if (pckFile && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+			SavePCK(gInstance->treeNodes, gInstance->pckEndianness, "", pckFile->getFileName()); // Save As
 		}
 	}
 }
 
 void UIImGui::RenderFileTree()
 {
-	if (!gPCKFile) return;
+	PCKFile* pckFile = gInstance->GetCurrentPCKFile();
+	if (!pckFile) return;
 
 	bool shouldScroll = false;
 
 	gApp->GetInstance()->visibleNodes.clear();
 	ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetFrameHeight()));
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x * 0.25f, ImGui::GetIO().DisplaySize.y - ImGui::GetFrameHeight()));
-	ImGui::Begin(std::string(gPCKFile->getFileName() + "###FileTree").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+	ImGui::Begin(std::string(pckFile->getFileName() + "###FileTree").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
 	bool shouldOpenFolder = false;
 	bool shouldCloseFolder = false;

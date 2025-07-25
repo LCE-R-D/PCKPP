@@ -2,11 +2,9 @@
 #include "ProgramInstance.h"
 
 void ProgramInstance::Reset() {
-    PCKFile* pckFile = gApp->GetInstance()->GetCurrentPCKFile();
-
-    if (pckFile) {
-        hasXMLSupport = pckFile->getXMLSupport();
-        pckEndianness = pckFile->getEndianness();
+    if (mCurrentPCKFile) {
+        hasXMLSupport = mCurrentPCKFile->getXMLSupport();
+        pckEndianness = mCurrentPCKFile->getEndianness();
     }
 
     selectedNodePath.clear();
