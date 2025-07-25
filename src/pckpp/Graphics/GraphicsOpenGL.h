@@ -31,6 +31,8 @@ public:
     // Loads textures from file, like TGA, PNG
     Texture LoadTextureFromFile(const std::string& path, TextureFilter filter = TextureFilter::NEAREST) override;
 
+    void DeleteTexture(const Texture& texture) override;
+
     // convert filter to GL Filter
     GLint GetGLFilter(TextureFilter filter) const;
 

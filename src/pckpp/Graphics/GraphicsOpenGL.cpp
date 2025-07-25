@@ -112,3 +112,8 @@ GLint GraphicsOpenGL::GetGLFilter(TextureFilter filter) const {
         return GL_LINEAR_MIPMAP_LINEAR;
     }
 }
+
+void GraphicsOpenGL::DeleteTexture(const Texture& texture)
+{
+    glDeleteTextures(1, &texture.id);
+}

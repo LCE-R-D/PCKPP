@@ -2,7 +2,7 @@
 
 #include "../Binary/Binary.h"
 #include "../PCK/PCKFile.h"
-#include <string>
+#include "../UI/Tree/TreeNode.h"
 
 class ProgramInstance {
 public:
@@ -23,6 +23,12 @@ public:
 
     // Loads PCK File from path
     void LoadPCKFile(const std::string& filepath);
+
+    // Tree Nodes
+    std::vector<FileTreeNode> treeNodes;
+
+    // Tree Nodes that are visible (for keyboard navigation)
+    std::vector<const FileTreeNode*> visibleNodes;
 
 private:
     std::unique_ptr<PCKFile> mCurrentPCKFile;

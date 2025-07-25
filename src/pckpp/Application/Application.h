@@ -8,6 +8,7 @@
 #include "../Backends/RendererBackend.h"
 #include "../UI/UIBase.h"
 #include "../Program/ProgramInstance.h"
+#include <map>
 
 template<typename TPlatform, typename TGraphics, typename TUI>
 class Application {
@@ -51,16 +52,33 @@ public:
     // Gets UI framework from the appliction
     TUI* GetUI() const;
 
+    const Texture& GetFileIcon(PCKAssetFile::Type type) const;
+    void SetFileIcon(PCKAssetFile::Type type, const Texture& texture);
+
+    const Texture& GetFolderIcon() const;
+    void SetFolderIcon(const Texture& texture);
+
+    const Texture& GetPreviewTexture() const;
+    void SetPreviewTexture(const Texture& texture);
+
 private:
-    std::unique_ptr<ProgramInstance> mInstance;
-    std::unique_ptr<TPlatform> mPlatform;
-    std::unique_ptr<TGraphics> mGraphics;
-    std::unique_ptr<TUI> mUI;
-    std::unique_ptr<PlatformBackend> mPlatformBackend;
-    std::unique_ptr<RendererBackend> mRendererBackend;
+    std::unique_ptr<ProgramInstance> mInstance{new ProgramInstance()};
+    std::unique_ptr<TPlatform> mPlatform{};
+    std::unique_ptr<TGraphics> mGraphics{};
+    std::unique_ptr<TUI> mUI{};
+    std::unique_ptr<PlatformBackend> mPlatformBackend{};
+    std::unique_ptr<RendererBackend> mRendererBackend{};
     bool initialized{ false };
+
+    // Icons for File Tree Nodes, indexed via PCK filetypes
+    std::map<PCKAssetFile::Type, Texture> mFileIcons{};
+    // Texture for folders
+    Texture mFolderIcon{};
+    // Current texture for the preview window
+    Texture mPreviewTexture{};
 };
 
+// Setup your custom application stuff below :3
 #include "../Platform/PlatformSDL.h"
 #include "../Graphics/GraphicsOpenGL.h"
 #include "../UI/UIImGui.h"

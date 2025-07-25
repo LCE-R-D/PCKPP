@@ -43,4 +43,7 @@ public:
 
     // Loads texture from file
     virtual Texture LoadTextureFromFile(const std::string& path, TextureFilter filter) = 0;
+
+    // Deletes texture
+    virtual void DeleteTexture(const Texture& texture) = 0;
 };

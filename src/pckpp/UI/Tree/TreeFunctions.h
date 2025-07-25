@@ -1,12 +1,10 @@
 #pragma once
 
 #include "../../Application/Application.h"
-
-struct FileTreeNode {
-	std::string path{};
-	PCKAssetFile* file{ nullptr }; // folder by default
-	std::vector<FileTreeNode> children;
-};
+#include "../../Binary/Binary.h"
+#include "../../PCK/PCKAssetFile.h"
+#include "TreeNode.h"
+#include <vector>
 
 // Saves PCK file from tree nodes
 void SavePCK(std::vector<FileTreeNode> nodes, Binary::Endianness endianness, const std::string& path = "", const std::string& defaultName = "");
@@ -27,7 +25,7 @@ void DeleteNode(FileTreeNode& targetNode, std::vector<FileTreeNode>& nodes);
 void SortTree(FileTreeNode& node);
 
 // Builds a given file tree
-void BuildFileTree(std::vector<FileTreeNode>& nodes);
+void BuildFileTree();
 
 // Scrolls to selected node when not visible
 void ScrollToNode(bool& keyScrolled);

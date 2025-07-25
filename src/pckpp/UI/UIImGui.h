@@ -30,9 +30,27 @@ public:
 
     // Renders the file tree in the main program form using ImGui elements
     void RenderFileTree() override;
+
+    // Renders the menu bar in the window using ImGui elements
+    void RenderMenuBar() override;
+
+    // Renders the context menu in the main program form's file tree using ImGui elements
+    void RenderContextMenu(FileTreeNode& node) override;
+
+    // Renders the preview window in the main program form using ImGui elements, takes file to preview
+    void RenderPreviewWindow(const PCKAssetFile& file) override;
+
+    // Renders the properties window in the main program form using ImGui elements, takes file to get properties from lol
+    void RenderPropertiesWindow(const PCKAssetFile& file) override;
+
+    // Renders a node on the node tree using ImGui elements; TODO: probably clean up the function's parameters. This seems unnecessary.
+    void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr, bool shouldScroll = false, bool openFolder = false, bool closeFolder = false) override;
+
+    // Handles keyboard input using ImGui and SDL, respectively
+    void HandleInput() override;
 };
 
-// Helpful opertaors for Vector stuff
+// Helpful opertaors for ImVec2
 
 inline ImVec2 operator+(const ImVec2& a, const ImVec2& b) {
     return ImVec2(a.x + b.x, a.y + b.y);

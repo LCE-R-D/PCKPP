@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../PCK/PCKAssetFile.h"
+#include "Tree/TreeNode.h"
+
 class UIBase {
 public:
 	virtual ~UIBase() {}
@@ -20,4 +23,22 @@ public:
 
 	// Renders the file tree in the main program form
 	virtual void RenderFileTree() = 0;
+
+	// Renders the menu bar in the window
+	virtual void RenderMenuBar() = 0;
+
+	// Renders the context menu in the main program form's file tree
+	virtual void RenderContextMenu(FileTreeNode& node) = 0;
+
+	// Renders the preview window in the main program form, takes file to preview
+	virtual void RenderPreviewWindow(const PCKAssetFile& file) = 0;
+
+	// Renders the properties window in the main program form, takes file to get properties from lol
+	virtual void RenderPropertiesWindow(const PCKAssetFile& file) = 0;
+
+	// Renders a node on the node tree; TODO: probably clean up the function's parameters. This seems unnecessary.
+	virtual void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr, bool shouldScroll = false, bool openFolder = false, bool closeFolder = false) = 0;
+
+	// Handles keyboard input. I'm unsure if this really should be here or another class lol
+	virtual void HandleInput() = 0;
 };

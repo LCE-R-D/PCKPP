@@ -53,7 +53,13 @@ void Application<TPlatform, TGraphics, TUI>::Update() {
 }
 
 template<typename TPlatform, typename TGraphics, typename TUI>
-void Application<TPlatform, TGraphics, TUI>::Shutdown() {}
+void Application<TPlatform, TGraphics, TUI>::Shutdown() {
+    for (auto& [type, tex] : mFileIcons)
+        if (tex.id != 0)
+            mGraphics->DeleteTexture(tex);
+
+    mFileIcons.clear();
+}
 
 template<typename TPlatform, typename TGraphics, typename TUI>
 TPlatform* Application<TPlatform, TGraphics, TUI>::GetPlatform() const
@@ -77,4 +83,36 @@ template<typename TPlatform, typename TGraphics, typename TUI>
 TUI* Application<TPlatform, TGraphics, TUI>::GetUI() const
 {
     return mUI.get();
+}
+
+template<typename TPlatform, typename TGraphics, typename TUI>
+const Texture& Application<TPlatform, TGraphics, TUI>::GetFileIcon(PCKAssetFile::Type type) const {
+    static Texture empty{};
+    auto it = mFileIcons.find(type);
+    return it != mFileIcons.end() ? it->second : empty;
+}
+
+template<typename TPlatform, typename TGraphics, typename TUI>
+void Application<TPlatform, TGraphics, TUI>::SetFileIcon(PCKAssetFile::Type type, const Texture& texture) {
+    mFileIcons[type] = texture;
+}
+
+template<typename TPlatform, typename TGraphics, typename TUI>
+const Texture& Application<TPlatform, TGraphics, TUI>::GetFolderIcon() const {
+    return mFolderIcon;
+}
+
+template<typename TPlatform, typename TGraphics, typename TUI>
+void Application<TPlatform, TGraphics, TUI>::SetFolderIcon(const Texture& texture) {
+    mFolderIcon = texture;
+}
+
+template<typename TPlatform, typename TGraphics, typename TUI>
+const Texture& Application<TPlatform, TGraphics, TUI>::GetPreviewTexture() const {
+    return mPreviewTexture;
+}
+
+template<typename TPlatform, typename TGraphics, typename TUI>
+void Application<TPlatform, TGraphics, TUI>::SetPreviewTexture(const Texture& texture) {
+    mPreviewTexture = texture;
 }

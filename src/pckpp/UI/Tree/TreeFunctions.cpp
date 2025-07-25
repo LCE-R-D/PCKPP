@@ -83,13 +83,13 @@ void SortTree(FileTreeNode& node) {
 			SortTree(child);
 }
 
-void BuildFileTree(std::vector<FileTreeNode>& nodes) {
+void BuildFileTree() {
 	PCKFile* pckFile = gApp->GetInstance()->GetCurrentPCKFile();
 
 	if (!pckFile)
 		return;
 
-	nodes.clear();
+	gApp->GetInstance()->treeNodes.clear();
 
 	FileTreeNode root;
 	auto& files = pckFile->getFiles();
@@ -129,7 +129,7 @@ void BuildFileTree(std::vector<FileTreeNode>& nodes) {
 	}
 
 	SortTree(root);
-	nodes = std::move(root.children);
+	gApp->GetInstance()->treeNodes = std::move(root.children);
 }
 
 void ScrollToNode(bool& keyScrolled)
