@@ -32,14 +32,14 @@ void Application<TPlatform, TGraphics, TUI>::SetRendererBackend(std::unique_ptr<
 
 template<typename TPlatform, typename TGraphics, typename TUI>
 bool Application<TPlatform, TGraphics, TUI>::Init(int argc, char* argv[]) {
-    if (argc > 1) {
-        mInstance.get()->LoadPCKFile(argv[1]);
-    }
-
     mPlatform = std::make_unique<TPlatform>();
     mGraphics = std::make_unique<TGraphics>();
     mUI = std::make_unique<TUI>();
     mInstance = std::make_unique<ProgramInstance>();
+
+    if (argc > 1) {
+        mInstance.get()->LoadPCKFile(argv[1]);
+    }
 
     initialized = true;
     return true;
