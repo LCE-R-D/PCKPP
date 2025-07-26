@@ -629,14 +629,36 @@ void UIImGui::RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* v
 				std::string draggedPath((const char*)payload->Data);
 				std::string targetFolder = std::filesystem::path(node.path).parent_path().string();
 
-				if (draggedPath != node.path && draggedPath != targetFolder && !(IsDescendantPath(targetFolder, draggedPath))) {
+				// Avoid dropping file onto itself or into one of its children; if applicable
+				if (draggedPath != node.path && !IsDescendantPath(draggedPath, node.path)) {
 					FileTreeNode* draggedNode = FindNodeByPath(draggedPath, gApp->GetInstance()->treeNodes);
 
-					if (draggedNode) {
-						std::filesystem::path newPath = std::filesystem::path(targetFolder) /
-							std::filesystem::path(draggedNode->path).filename();
+					// move file to folder AND index of the file it was dropped on
+					if (draggedNode && draggedNode->file && node.file) {
+						PCKFile* pckFile = gInstance->GetCurrentPCKFile();
+						const PCKAssetFile* draggedFile = draggedNode->file;
+						const PCKAssetFile* targetFile = node.file;
 
-						UpdateNodePathRecursive(*draggedNode, newPath.string());
+						int draggedIndex = pckFile->getFileIndex(draggedFile);
+						int targetIndex = pckFile->getFileIndex(targetFile);
+
+						if (draggedIndex != -1 && targetIndex != -1 && draggedIndex != targetIndex) {
+							// Only works when going from a later entry in the tree to an early entry; this is due to a weird bug
+							if (draggedIndex < targetIndex)
+								targetIndex--;
+
+							std::filesystem::path draggedParent = std::filesystem::path(draggedFile->getPath()).parent_path();
+							std::filesystem::path targetParent = std::filesystem::path(targetFile->getPath()).parent_path();
+
+							// Move file index only if already in the same folder; this is due to a cute bug
+							if (draggedParent == targetParent) {
+								pckFile->moveFileToIndex(draggedFile, targetIndex);
+							}
+
+							// Move file to new folder; if applicable
+							std::filesystem::path newPath = targetFolder / std::filesystem::path(draggedNode->file->getPath()).filename();
+							UpdateNodePathRecursive(*draggedNode, newPath.string());
+						}
 					}
 				}
 			}

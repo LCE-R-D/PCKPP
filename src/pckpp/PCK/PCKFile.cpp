@@ -229,6 +229,36 @@ void PCKFile::clearFiles()
 	mFiles.clear();
 }
 
+int PCKFile::getFileIndex(const PCKAssetFile* file) const
+{
+	if (!file) return -1;
+
+	for (size_t i = 0; i < mFiles.size(); ++i) {
+		if (&mFiles[i] == file)
+			return static_cast<int>(i);
+	}
+	return -1;
+}
+
+void PCKFile::moveFileToIndex(const PCKAssetFile* file, size_t newIndex)
+{
+	if (!file || newIndex >= mFiles.size())
+		return;
+
+	auto it = std::find_if(mFiles.begin(), mFiles.end(), [&](const PCKAssetFile& f) {
+		return &f == file;
+		});
+
+	if (it == mFiles.end())
+		return;
+
+	PCKAssetFile temp = std::move(*it);
+	mFiles.erase(it);
+
+	auto insertIt = mFiles.begin() + newIndex;
+	mFiles.insert(insertIt, std::move(temp));
+}
+
 uint32_t PCKFile::getPCKVersion() const
 {
 	return mVersion;

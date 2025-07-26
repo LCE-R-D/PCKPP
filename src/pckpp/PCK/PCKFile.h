@@ -41,6 +41,12 @@ public:
 	// Clears the PCK File
 	void clearFiles();
 
+	// Gets the index of a given file
+	int getFileIndex(const PCKAssetFile* file) const;
+
+	// Moves a given file to a given index
+	void moveFileToIndex(const PCKAssetFile* file, size_t newIndex);
+
 	// Get XML Support. TODO: Replace with XMLVersion PROPERLY
 	bool getXMLSupport() const;
 
