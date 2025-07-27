@@ -46,6 +46,9 @@ public:
     // Renders a node on the node tree using ImGui elements; TODO: probably clean up the function's parameters. This seems unnecessary.
     void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr, bool shouldScroll = false, bool openFolder = false, bool closeFolder = false) override;
 
+    // Shows a modal pop up to handle dropped file types with numerous actions for the same extension using ImGui elements
+    void ShowAmbigiousFileDropPopUp(const std::string& filepath) override;
+
     // Handles keyboard input using ImGui and SDL, respectively
     void HandleInput() override;
 };

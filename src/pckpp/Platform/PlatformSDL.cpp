@@ -64,10 +64,7 @@ void PlatformSDL::PollEvents(PlatformBackend* backend) {
 				mShouldClose = true;
 				break;
 			case SDL_EVENT_DROP_FILE:
-				if (gApp->GetInstance()->GetCurrentPCKFile() &&
-					!gApp->GetPlatform()->ShowYesNoMessagePrompt("Open PCK?", "Are you sure you want to open this PCK file? Your unsaved changes will be lost."))
-					break; // if no, then abort
-				gApp->GetInstance()->LoadPCKFile(event.drop.data);
+				gApp->GetUI()->ShowAmbigiousFileDropPopUp(event.drop.data);
 				break;
 			default:
 				break;

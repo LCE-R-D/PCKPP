@@ -39,6 +39,9 @@ public:
 	// Renders a node on the node tree; TODO: probably clean up the function's parameters. This seems unnecessary.
 	virtual void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr, bool shouldScroll = false, bool openFolder = false, bool closeFolder = false) = 0;
 
+	// Shows a modal pop up to handle dropped file types with numerous actions for the same extension
+	virtual void ShowAmbigiousFileDropPopUp(const std::string& filepath) = 0;
+
 	// Handles keyboard input. I'm unsure if this really should be here or another class lol
 	virtual void HandleInput() = 0;
 };

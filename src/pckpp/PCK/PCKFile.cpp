@@ -1,6 +1,7 @@
 #include "PCKFile.h"
 #include "../Binary/BinaryReader.h"
 #include "../Binary/BinaryWriter.h"
+#include "../Util/Util.h"
 #include <set>
 
 const char* XML_VERSION_STRING{ "XMLVERSION" }; // used for advanced/full box support for skins
@@ -199,6 +200,11 @@ void PCKFile::Write(const std::string& outpath, Binary::Endianness endianness)
 
 		writer.WriteData(file.getData().data(), file.getFileSize());
 	}
+}
+
+void PCKFile::addFileFromFile(const std::string& filepath)
+{
+	// uh uh uh don't look, i'm naked ><
 }
 
 void PCKFile::addFile(const PCKAssetFile* file)

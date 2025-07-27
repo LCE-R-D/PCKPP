@@ -35,6 +35,9 @@ public:
 	// Adds PCKAssetFile to the PCK file
 	void addFile(const PCKAssetFile* file);
 
+	// Adds PCKAssetFile to the PCK file from disk
+	void addFileFromFile(const std::string& filepath);
+
 	// Deletes PCKAssetFile from the PCK file
 	void deleteFile(const PCKAssetFile* file);
 

@@ -12,6 +12,12 @@ static const PCKAssetFile* gLastPreviewedFile = nullptr;
 // globals for this file
 ProgramInstance* gInstance = nullptr;
 
+bool showFileDropPopUp{ false };
+std::string gDroppedFilePath;
+
+const char* PCK_FILE_DROP_POPUP_TITLE = "PCK File Functions";
+const char* INSERT_FILE_POPUP_TITLE = "Insert File";
+
 bool IsClicked()
 {
 	return (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right)) ||
@@ -47,6 +53,7 @@ bool UIImGui::InitBackends(void* platformData, void* rendererData) {
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.CellPadding = ImVec2(0, 0);
+	style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0, 0, 0, 0.0f); // make modal background transparent
 
 	ImFontAtlas* fonts = ImGui::GetIO().Fonts;
 
@@ -333,6 +340,38 @@ void UIImGui::RenderFileTree()
 
 	shouldOpenFolder = false;
 	shouldCloseFolder = false;
+
+	if(showFileDropPopUp)
+		ImGui::OpenPopup(PCK_FILE_DROP_POPUP_TITLE);
+
+	if (ImGui::BeginPopupModal(PCK_FILE_DROP_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("What do you want to do with this file?");
+		if (ImGui::Button("Open PCK File") && gApp->GetPlatform()->ShowYesNoMessagePrompt("Open PCK?", "Are you sure you want to open this PCK file? Your unsaved changes will be lost."))
+		{
+			showFileDropPopUp = false;
+			gApp->GetInstance()->LoadPCKFile(gDroppedFilePath);
+			ImGui::CloseCurrentPopup();
+		}
+		if (ImGui::Button("Add file to existing PCK"))
+		{
+			ImGui::OpenPopup(INSERT_FILE_POPUP_TITLE);
+
+			if (ImGui::BeginPopupModal(INSERT_FILE_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				static char new_path[255] = "";
+				ImGui::InputTextWithHint("File path", gDroppedFilePath.c_str(), new_path, IM_ARRAYSIZE(new_path));
+
+				if (ImGui::Button)
+				{
+					showFileDropPopUp = false;
+					ImGui::CloseCurrentPopup();
+				}
+			}
+		}
+		ImGui::EndPopup();
+	}
+
 	ImGui::End();
 }
 
@@ -667,4 +706,20 @@ void UIImGui::RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* v
 	}
 
 	ImGui::PopID();
+}
+
+void UIImGui::ShowAmbigiousFileDropPopUp(const std::string& filepath)
+{
+	gDroppedFilePath = "";
+	// This is for PCK Files only; i.e.; let the user decide whether to open the file or to ADD it to the already opened PCK
+	if (std::filesystem::path(filepath).extension().string() == ".pck")
+	{
+		gDroppedFilePath = filepath;
+		showFileDropPopUp = gApp->GetInstance()->GetCurrentPCKFile(); // if file isn't opened, then don't display pop up
+		printf("DROPPED CHECK: %i %s\n", showFileDropPopUp, gDroppedFilePath.c_str());
+
+		// if initially dropped when there is no PCK file opened
+		if (!showFileDropPopUp)
+			gApp->GetInstance()->LoadPCKFile(gDroppedFilePath);
+	}
 }
