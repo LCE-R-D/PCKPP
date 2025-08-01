@@ -48,13 +48,13 @@ public:
 	};
 
 	// Gets a asset type as a string
-	constexpr const char* PCKAssetFile::getAssetTypeString() const
+	constexpr const char* getAssetTypeString() const
 	{
 		return getAssetTypeString(mAssetType);
 	}
 
 	// Gets a asset type as a string
-	static constexpr const char* PCKAssetFile::getAssetTypeString(PCKAssetFile::Type type)
+	static constexpr const char* getAssetTypeString(Type type)
 	{
 		switch (type)
 		{
@@ -78,13 +78,13 @@ public:
 	}
 
 	// Gets a asset type as a string for dialogs
-	constexpr const char* PCKAssetFile::getAssetTypeStringDisplay() const
+	constexpr const char* getAssetTypeStringDisplay() const
 	{
 		return getAssetTypeStringDisplay(mAssetType);
 	}
 
 	// Gets a asset type as a string for dialogs
-	static constexpr const char* PCKAssetFile::getAssetTypeStringDisplay(PCKAssetFile::Type type)
+	static constexpr const char* getAssetTypeStringDisplay(Type type)
 	{
 		switch (type)
 		{
@@ -107,12 +107,12 @@ public:
 		}
 	}
 
-	const std::vector<const char*> PCKAssetFile::getPreferredExtension() const
+	const std::vector<const char*> getPreferredExtension() const
 	{
 		return getPreferredExtension(mAssetType);
 	}
 
-	static const std::vector<const char*> PCKAssetFile::getPreferredExtension(PCKAssetFile::Type type)
+	static const std::vector<const char*> getPreferredExtension(Type type)
 	{
 		switch (type)
 		{
