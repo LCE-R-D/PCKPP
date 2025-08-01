@@ -265,10 +265,10 @@ void UIImGui::HandleInput()
 			OpenPCKFileDialog();
 		}
 		else if (pckFile && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gInstance->treeNodes, gInstance->pckEndianness, pckFile->getFilePath()); // Save
+			SavePCK(gInstance->treeNodes, gInstance->pckEndianness, "", pckFile->getFileName()); // Save As
 		}
 		else if (pckFile && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SavePCK(gInstance->treeNodes, gInstance->pckEndianness, "", pckFile->getFileName()); // Save As
+			SavePCK(gInstance->treeNodes, gInstance->pckEndianness, pckFile->getFilePath()); // Save
 		}
 	}
 }
