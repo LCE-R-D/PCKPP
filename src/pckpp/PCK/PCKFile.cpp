@@ -24,17 +24,20 @@ void PCKFile::Read(const std::string& inpath)
 	{
 		mEndianess = Binary::Endianness::BIG;
 		mVersion = versionSwapped;
+		printf("Big Endian detected");
 	}
 	else if (version >= 0 && version <= 3)
 	{
 		mEndianess = Binary::Endianness::LITTLE;
-		printf("Little Endian detected, version %u\n", version);
+		printf("Little Endian detected");
 		mVersion = version;
 	}
 	else
 	{
 		throw std::runtime_error("Invalid PCK version");
 	}
+
+	printf(", version %u\n", mVersion);
 
 	reader.SetEndianness(mEndianess);
 
