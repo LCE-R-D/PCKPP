@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <fstream>
 #include <vector>
+#include <filesystem>
 
 // PCK Asset File and Asset File Types research done by NessieHax/Miku666/nullptr, myself (May/MattNL), and many others over the years.
 
@@ -139,6 +141,56 @@ public:
 		default:
 			return { "*" }; // any file type
 		}
+	}
+
+	static PCKAssetFile::Type getPreferredType(const std::string& filepath)
+	{
+		std::filesystem::path path(filepath);
+		std::string filename = path.filename().string();
+		std::string ext = path.extension().string();
+
+		if (!ext.empty() && ext[0] == '.')
+			ext.erase(0, 1);
+		std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+		std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
+
+		if (filename == "0")
+			return Type::INFO;
+		if (ext == "png" || ext == "tga")
+		{
+			if (filename._Starts_with("dlcskin"))
+				return Type::SKIN;
+			else if (filename._Starts_with("dlccape"))
+				return Type::CAPE;
+		}
+		if (ext == "pck")
+		{
+			if (filename == "audio.pck")
+				return Type::AUDIO_DATA;
+			else if (filename == "skins.pck")
+				return Type::SKIN_DATA;
+			else
+				return Type::TEXTURE_PACK_INFO;
+		}
+		if (ext == "loc")
+			return Type::LOCALISATION;
+		if (ext == "grf")
+			return Type::GAME_RULES;
+		if (ext == "col")
+			return Type::COLOUR_TABLE;
+		if (ext == "grh")
+			return Type::GAME_RULES_HEADER;
+		if (ext == "bin")
+		{
+			if (filename == "models.bin")
+				return Type::MODELS;
+			else if (filename == "behaviours.bin")
+				return Type::BEHAVIOURS;
+			else if (filename == "entitymaterials.bin")
+				return Type::MATERIALS;
+		}
+
+		return Type::TEXTURE;
 	}
 
 	PCKAssetFile(const std::string& path, const std::vector<unsigned char>& data, Type assetType)
