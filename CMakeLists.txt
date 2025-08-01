@@ -12,6 +12,10 @@ enable_language(CXX)
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
 set(SRC ${SOURCE_FILES})
 
+include_directories(PCKPP PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/include/
+)
+
 # TODO: Add icons for other platforms
 
 # Windows embedded resources
