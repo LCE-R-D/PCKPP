@@ -15,11 +15,14 @@ PCKFile* ProgramInstance::GetCurrentPCKFile() {
 }
 
 void ProgramInstance::LoadPCKFile(const std::string& filepath) {
+    bool empty = !mCurrentPCKFile;
+
     try {
         mCurrentPCKFile = std::make_unique<PCKFile>();
         mCurrentPCKFile->Read(filepath);
     }
     catch (...) {
         printf("Failed to load PCK file: %s", filepath.c_str());
+        if(empty) mCurrentPCKFile = nullptr; // so when an file argument fails, the UI isn't already loaded
     }
 }

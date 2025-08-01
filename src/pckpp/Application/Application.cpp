@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "../Program/Program.h"
+#include "../UI/Menu/MenuFunctions.h"
 #include <fstream>
 #include <iostream>
 
@@ -38,7 +39,7 @@ bool Application<TPlatform, TGraphics, TUI>::Init(int argc, char* argv[]) {
     mInstance = std::make_unique<ProgramInstance>();
 
     if (argc > 1) {
-        mInstance.get()->LoadPCKFile(argv[1]);
+        OpenPCKFile(argv[1]);
     }
 
     initialized = true;
