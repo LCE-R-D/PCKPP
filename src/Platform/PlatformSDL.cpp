@@ -60,7 +60,7 @@ void PlatformSDL::PollEvents(PlatformBackend* backend) {
 				mShouldClose = true;
 				break;
 			case SDL_EVENT_DROP_FILE:
-				gApp->GetUI()->ShowAmbigiousFileDropPopUp(event.drop.data);
+				gApp->GetUI()->ShowFileDropPopUp(event.drop.data);
 				break;
 			default:
 				break;

@@ -759,10 +759,12 @@ void UIImGui::RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* v
 	ImGui::PopID();
 }
 
-void UIImGui::ShowAmbigiousFileDropPopUp(const std::string& filepath)
+void UIImGui::ShowFileDropPopUp(const std::string& filepath)
 {
 	if (gPopupState != PopupState::NONE)
 		return;
+
+	printf("DROPPED FILE: %s\n", gDroppedFilePath.c_str());
 
 	gDroppedFilePath = "";
 	// This is for PCK Files only; i.e.; let the user decide whether to open the file or to ADD it to the already opened PCK
@@ -773,10 +775,13 @@ void UIImGui::ShowAmbigiousFileDropPopUp(const std::string& filepath)
 		if (showFileDropPopUp)
 			gPopupState = PopupState::PCK_FILE_DROP;// display PCK File popup only if file is opened
 
-		printf("DROPPED CHECK: %i %s\n", showFileDropPopUp, gDroppedFilePath.c_str());
-
 		// if initially dropped when there is no PCK file opened
 		if (!showFileDropPopUp)
 			gApp->GetInstance()->LoadPCKFile(gDroppedFilePath);
+	}
+	else
+	{
+		gDroppedFilePath = filepath;
+		gPopupState = PopupState::INSERT_FILE; // go right to insert file only
 	}
 }
