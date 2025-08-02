@@ -1,4 +1,5 @@
 #include <sstream>
+#include <cstring>
 #include <pckpp/Program/ProgramInstance.h>
 #include <pckpp/UI/UIImGui.h>
 #include <pckpp/UI/Menu/MenuFunctions.h>

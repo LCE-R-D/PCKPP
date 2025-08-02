@@ -161,9 +161,9 @@ public:
 			return Type::INFO;
 		if (ext == "png" || ext == "tga")
 		{
-			if (filename._Starts_with("dlcskin"))
+			if (filename.rfind("dlcskin", 0) == 0)
 				return Type::SKIN;
-			else if (filename._Starts_with("dlccape"))
+			else if (filename.rfind("dlccape", 0) == 0)
 				return Type::CAPE;
 		}
 		if (ext == "pck")

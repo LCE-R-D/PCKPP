@@ -34,7 +34,7 @@ public:
 	void addFile(const PCKAssetFile* file);
 
 	// Adds PCKAssetFile to the PCK file from disk
-	void addFileFromDisk(const std::string& filepath, std::string& new_filepath, PCKAssetFile::Type fileType = PCKAssetFile::Type::TEXTURE);
+	void addFileFromDisk(const std::string& filepath, std::string new_filepath, PCKAssetFile::Type fileType = PCKAssetFile::Type::TEXTURE);
 
 	// Deletes PCKAssetFile from the PCK file
 	void deleteFile(const PCKAssetFile* file);

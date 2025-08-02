@@ -204,7 +204,7 @@ void PCKFile::Write(const std::string& outpath, Binary::Endianness endianness)
 	}
 }
 
-void PCKFile::addFileFromDisk(const std::string& filepath, std::string& new_filepath, PCKAssetFile::Type fileType)
+void PCKFile::addFileFromDisk(const std::string& filepath, std::string new_filepath, PCKAssetFile::Type fileType)
 {
 	if (new_filepath.empty())
 		new_filepath = std::filesystem::path(filepath).filename().string();
