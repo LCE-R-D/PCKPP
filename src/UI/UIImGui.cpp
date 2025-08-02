@@ -351,7 +351,10 @@ void UIImGui::RenderFileTree()
 
 	// Trigger popup externally when file is dropped
 	if (gPopupState == PopupState::PCK_FILE_DROP)
+	{
 		ImGui::OpenPopup(PCK_FILE_DROP_POPUP_TITLE);
+		gPopupState = PopupState::NONE;
+	}
 
 	// File drop popup
 	if (ImGui::BeginPopupModal(PCK_FILE_DROP_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
@@ -363,7 +366,6 @@ void UIImGui::RenderFileTree()
 			if (gApp->GetPlatform()->ShowYesNoMessagePrompt("Open PCK?", "Are you sure you want to open this PCK file? Your unsaved changes will be lost."))
 			{
 				gApp->GetInstance()->LoadPCKFile(gDroppedFilePath);
-				gPopupState = PopupState::NONE;
 				ImGui::CloseCurrentPopup();
 			}
 		}
@@ -379,17 +381,24 @@ void UIImGui::RenderFileTree()
 		ImGui::EndPopup();
 	}
 
+	static char new_path[255] = "";
+	static int typeIndex = static_cast<int>(PCKAssetFile::Type::TEXTURE);
+
 	// Transition to insert popup next frame
 	if (gPopupState == PopupState::INSERT_FILE)
+	{
+		memset(new_path, 0, sizeof(new_path)); // clear new_path (what a weird solution)
+		typeIndex = static_cast<int>(PCKAssetFile::getPreferredAssetType(gDroppedFilePath));
 		ImGui::OpenPopup(INSERT_FILE_POPUP_TITLE);
+
+		gPopupState = PopupState::NONE;
+	}
 
 	// Insert file popup
 	if (ImGui::BeginPopupModal(INSERT_FILE_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		char new_path[255] = "";
-		ImGui::InputTextWithHint("Full file path", std::filesystem::path(gDroppedFilePath).filename().string().c_str(), new_path, IM_ARRAYSIZE(new_path));
 
-		int typeIndex = static_cast<int>(PCKAssetFile::getPreferredAssetType(gDroppedFilePath));
+		ImGui::InputTextWithHint("Full file path", std::filesystem::path(gDroppedFilePath).filename().string().c_str(), new_path, IM_ARRAYSIZE(new_path));
 
 		ImGui::Combo("File Type", &typeIndex, PCKAssetFile::AssetTypeStrings, IM_ARRAYSIZE(PCKAssetFile::AssetTypeStrings));
 
@@ -407,8 +416,6 @@ void UIImGui::RenderFileTree()
 			{
 				platform->mDialog.ShowError("Error", "Unknown error occured");
 			}
-
-			gPopupState = PopupState::NONE;
 			ImGui::CloseCurrentPopup();
 		}
 
@@ -416,7 +423,6 @@ void UIImGui::RenderFileTree()
 
 		if (ImGui::Button("Cancel"))
 		{
-			gPopupState = PopupState::NONE;
 			ImGui::CloseCurrentPopup();
 		}
 
