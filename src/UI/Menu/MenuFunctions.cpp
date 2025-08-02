@@ -196,7 +196,7 @@ void SetFilePropertiesDialog(PCKAssetFile& file)
 
 PlatformBase::FileDialogBase::FileFilter GetFilter(const PCKAssetFile& file)
 {
-	const std::vector<const char*> ext = file.getPreferredExtension();
+	const std::vector<const char*> ext = file.getPreferredAssetExtension();
 
 	static std::string nameStr;
 	static std::string patternStr;

@@ -112,12 +112,12 @@ public:
 		}
 	}
 
-	const std::vector<const char*> getPreferredExtension() const
+	const std::vector<const char*> getPreferredAssetExtension() const
 	{
-		return getPreferredExtension(mAssetType);
+		return getPreferredAssetExtension(mAssetType);
 	}
 
-	static const std::vector<const char*> getPreferredExtension(Type type)
+	static const std::vector<const char*> getPreferredAssetExtension(Type type)
 	{
 		switch (type)
 		{
@@ -146,7 +146,7 @@ public:
 		}
 	}
 
-	static PCKAssetFile::Type getPreferredType(const std::string& filepath)
+	static PCKAssetFile::Type getPreferredAssetType(const std::string& filepath)
 	{
 		std::filesystem::path path(filepath);
 		std::string filename = path.filename().string();
