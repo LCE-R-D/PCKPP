@@ -389,7 +389,7 @@ void UIImGui::RenderFileTree()
 		char new_path[255] = "";
 		ImGui::InputTextWithHint("Full file path", std::filesystem::path(gDroppedFilePath).filename().string().c_str(), new_path, IM_ARRAYSIZE(new_path));
 
-		static int typeIndex = static_cast<int>(PCKAssetFile::getPreferredAssetType(gDroppedFilePath));
+		int typeIndex = static_cast<int>(PCKAssetFile::getPreferredAssetType(gDroppedFilePath));
 
 		ImGui::Combo("File Type", &typeIndex, PCKAssetFile::AssetTypeStrings, IM_ARRAYSIZE(PCKAssetFile::AssetTypeStrings));
 
