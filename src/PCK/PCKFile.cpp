@@ -204,9 +204,24 @@ void PCKFile::Write(const std::string& outpath, Binary::Endianness endianness)
 	}
 }
 
-void PCKFile::addFileFromFile(const std::string& filepath)
+void PCKFile::addFileFromDisk(const std::string& filepath, std::string& new_filepath, PCKAssetFile::Type fileType)
 {
-	// uh uh uh don't look, i'm naked ><
+	if (new_filepath.empty())
+		new_filepath = std::filesystem::path(filepath).filename().string();
+
+	std::ifstream in(filepath, std::ios::binary | std::ios::ate);
+	if (!in.is_open())
+		throw std::runtime_error("Could not open file: " + filepath);
+
+	std::streamsize size = in.tellg();
+	in.seekg(0, std::ios::beg);
+
+	std::vector<unsigned char> buffer(size);
+	if (!in.read(reinterpret_cast<char*>(buffer.data()), size))
+		throw std::runtime_error("Failed to read file: " + filepath);
+
+	PCKAssetFile asset(new_filepath, buffer, fileType);
+	addFile(&asset);
 }
 
 void PCKFile::addFile(const PCKAssetFile* file)
