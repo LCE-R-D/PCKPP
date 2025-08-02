@@ -12,11 +12,18 @@ static const PCKAssetFile* gLastPreviewedFile = nullptr;
 // globals for this file
 ProgramInstance* gInstance = nullptr;
 
-bool showFileDropPopUp{ false };
 std::string gDroppedFilePath;
 
 const char* PCK_FILE_DROP_POPUP_TITLE = "PCK File Functions";
 const char* INSERT_FILE_POPUP_TITLE = "Insert File";
+
+enum class PopupState {
+	NONE,
+	PCK_FILE_DROP,
+	INSERT_FILE
+};
+
+PopupState gPopupState = PopupState::NONE;
 
 bool IsClicked()
 {
@@ -276,6 +283,7 @@ void UIImGui::HandleInput()
 void UIImGui::RenderFileTree()
 {
 	PCKFile* pckFile = gInstance->GetCurrentPCKFile();
+	const auto& platform = gApp->GetPlatform();
 	if (!pckFile) return;
 
 	bool shouldScroll = false;
@@ -341,34 +349,77 @@ void UIImGui::RenderFileTree()
 	shouldOpenFolder = false;
 	shouldCloseFolder = false;
 
-	if(showFileDropPopUp)
+	// Trigger popup externally when file is dropped
+	if (gPopupState == PopupState::PCK_FILE_DROP)
 		ImGui::OpenPopup(PCK_FILE_DROP_POPUP_TITLE);
 
+	// File drop popup
 	if (ImGui::BeginPopupModal(PCK_FILE_DROP_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		ImGui::Text("What do you want to do with this file?");
-		if (ImGui::Button("Open PCK File") && gApp->GetPlatform()->ShowYesNoMessagePrompt("Open PCK?", "Are you sure you want to open this PCK file? Your unsaved changes will be lost."))
-		{
-			showFileDropPopUp = false;
-			gApp->GetInstance()->LoadPCKFile(gDroppedFilePath);
-			ImGui::CloseCurrentPopup();
-		}
-		if (ImGui::Button("Add file to existing PCK"))
-		{
-			ImGui::OpenPopup(INSERT_FILE_POPUP_TITLE);
 
-			if (ImGui::BeginPopupModal(INSERT_FILE_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		if (ImGui::Button("Open PCK File"))
+		{
+			if (gApp->GetPlatform()->ShowYesNoMessagePrompt("Open PCK?", "Are you sure you want to open this PCK file? Your unsaved changes will be lost."))
 			{
-				static char new_path[255] = "";
-				ImGui::InputTextWithHint("File path", gDroppedFilePath.c_str(), new_path, IM_ARRAYSIZE(new_path));
-
-				if (ImGui::Button)
-				{
-					showFileDropPopUp = false;
-					ImGui::CloseCurrentPopup();
-				}
+				gApp->GetInstance()->LoadPCKFile(gDroppedFilePath);
+				gPopupState = PopupState::NONE;
+				ImGui::CloseCurrentPopup();
 			}
 		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Add file to existing PCK"))
+		{
+			gPopupState = PopupState::INSERT_FILE;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	// Transition to insert popup next frame
+	if (gPopupState == PopupState::INSERT_FILE)
+		ImGui::OpenPopup(INSERT_FILE_POPUP_TITLE);
+
+	// Insert file popup
+	if (ImGui::BeginPopupModal(INSERT_FILE_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		char new_path[255] = "";
+		ImGui::InputTextWithHint("Full file path", std::filesystem::path(gDroppedFilePath).filename().string().c_str(), new_path, IM_ARRAYSIZE(new_path));
+
+		static int typeIndex = static_cast<int>(PCKAssetFile::getPreferredAssetType(gDroppedFilePath));
+
+		ImGui::Combo("File Type", &typeIndex, PCKAssetFile::AssetTypeStrings, IM_ARRAYSIZE(PCKAssetFile::AssetTypeStrings));
+
+		if (ImGui::Button("Insert"))
+		{
+			try
+			{
+				pckFile->addFileFromDisk(gDroppedFilePath, std::string(new_path), static_cast<PCKAssetFile::Type>(typeIndex));
+			}
+			catch (std::exception& ex)
+			{
+				platform->mDialog.ShowError("Error", ex.what());
+			}
+			catch (...)
+			{
+				platform->mDialog.ShowError("Error", "Unknown error occured");
+			}
+
+			gPopupState = PopupState::NONE;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel"))
+		{
+			gPopupState = PopupState::NONE;
+			ImGui::CloseCurrentPopup();
+		}
+
 		ImGui::EndPopup();
 	}
 
@@ -710,12 +761,18 @@ void UIImGui::RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* v
 
 void UIImGui::ShowAmbigiousFileDropPopUp(const std::string& filepath)
 {
+	if (gPopupState != PopupState::NONE)
+		return;
+
 	gDroppedFilePath = "";
 	// This is for PCK Files only; i.e.; let the user decide whether to open the file or to ADD it to the already opened PCK
 	if (std::filesystem::path(filepath).extension().string() == ".pck")
 	{
 		gDroppedFilePath = filepath;
-		showFileDropPopUp = gApp->GetInstance()->GetCurrentPCKFile(); // if file isn't opened, then don't display pop up
+		bool showFileDropPopUp = gApp->GetInstance()->GetCurrentPCKFile();
+		if (showFileDropPopUp)
+			gPopupState = PopupState::PCK_FILE_DROP;// display PCK File popup only if file is opened
+
 		printf("DROPPED CHECK: %i %s\n", showFileDropPopUp, gDroppedFilePath.c_str());
 
 		// if initially dropped when there is no PCK file opened
