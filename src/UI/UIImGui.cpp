@@ -15,12 +15,14 @@ ProgramInstance* gInstance = nullptr;
 std::string gDroppedFilePath;
 
 const char* PCK_FILE_DROP_POPUP_TITLE = "PCK File Functions";
-const char* INSERT_FILE_POPUP_TITLE = "Insert File";
+const char* IMPORT_FILE_POPUP_TITLE = "Import File";
+const char* IMPORT_DIRECTORY_POPUP_TITLE = "Import Directory";
 
 enum class PopupState {
 	NONE,
 	PCK_FILE_DROP,
-	INSERT_FILE
+	IMPORT_FILE,
+	IMPORT_DIRECTORY,
 };
 
 PopupState gPopupState = PopupState::NONE;
@@ -349,14 +351,13 @@ void UIImGui::RenderFileTree()
 	shouldOpenFolder = false;
 	shouldCloseFolder = false;
 
-	// Trigger popup externally when file is dropped
 	if (gPopupState == PopupState::PCK_FILE_DROP)
 	{
 		ImGui::OpenPopup(PCK_FILE_DROP_POPUP_TITLE);
 		gPopupState = PopupState::NONE;
 	}
 
-	// File drop popup
+	// Import PCK file popup
 	if (ImGui::BeginPopupModal(PCK_FILE_DROP_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		ImGui::Text("What do you want to do with this file?");
@@ -372,9 +373,9 @@ void UIImGui::RenderFileTree()
 
 		ImGui::SameLine();
 
-		if (ImGui::Button("Add file to existing PCK"))
+		if (ImGui::Button("Import to existing PCK"))
 		{
-			gPopupState = PopupState::INSERT_FILE;
+			gPopupState = PopupState::IMPORT_FILE;
 			ImGui::CloseCurrentPopup();
 		}
 
@@ -384,29 +385,83 @@ void UIImGui::RenderFileTree()
 	static char new_path[255] = "";
 	static int typeIndex = static_cast<int>(PCKAssetFile::Type::TEXTURE);
 
-	// Transition to insert popup next frame
-	if (gPopupState == PopupState::INSERT_FILE)
+	if (gPopupState == PopupState::IMPORT_FILE)
 	{
 		memset(new_path, 0, sizeof(new_path)); // clear new_path (what a weird solution)
-		typeIndex = static_cast<int>(PCKAssetFile::getPreferredAssetType(gDroppedFilePath));
-		ImGui::OpenPopup(INSERT_FILE_POPUP_TITLE);
+		typeIndex = static_cast<int>(PCKAssetFile::getPreferredAssetType(gDroppedFilePath)); // grab the likely file type based on path
+		ImGui::OpenPopup(IMPORT_FILE_POPUP_TITLE);
 
 		gPopupState = PopupState::NONE;
 	}
 
-	// Insert file popup
-	if (ImGui::BeginPopupModal(INSERT_FILE_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	// Import file popup
+	if (ImGui::BeginPopupModal(IMPORT_FILE_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 
 		ImGui::InputTextWithHint("Full file path", std::filesystem::path(gDroppedFilePath).filename().string().c_str(), new_path, IM_ARRAYSIZE(new_path));
 
 		ImGui::Combo("File Type", &typeIndex, PCKAssetFile::AssetTypeStrings, IM_ARRAYSIZE(PCKAssetFile::AssetTypeStrings));
 
-		if (ImGui::Button("Insert"))
+		if (ImGui::Button("Import"))
 		{
 			try
 			{
 				pckFile->addFileFromDisk(gDroppedFilePath, std::string(new_path), static_cast<PCKAssetFile::Type>(typeIndex));
+			}
+			catch (std::exception& ex)
+			{
+				platform->mDialog.ShowError("Error", ex.what());
+			}
+			catch (...)
+			{
+				platform->mDialog.ShowError("Error", "Unknown error occured");
+			}
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel"))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	if (gPopupState == PopupState::IMPORT_DIRECTORY)
+	{
+		memset(new_path, 0, sizeof(new_path)); // clear new_path (what a weird solution)
+		ImGui::OpenPopup(IMPORT_DIRECTORY_POPUP_TITLE);
+		gPopupState = PopupState::NONE;
+	}
+
+	// Import directory popup
+	if (ImGui::BeginPopupModal(IMPORT_DIRECTORY_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+
+		ImGui::InputTextWithHint("Full file path", std::filesystem::path(gDroppedFilePath).filename().string().c_str(), new_path, IM_ARRAYSIZE(new_path));
+
+		if (ImGui::Button("Import"))
+		{
+			try
+			{
+				for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(gDroppedFilePath))
+				{
+					if (!dir_entry.is_regular_file())
+						continue;
+
+					// I don't know why it's not getting the name here but it was in the file pop up lol
+					std::string base_folder = std::string(new_path).empty() ? std::filesystem::path(gDroppedFilePath).filename().string() : std::string(new_path);
+
+					std::filesystem::path relativePath = std::filesystem::relative(dir_entry.path(), gDroppedFilePath);
+					std::string fullPathInPck = base_folder + "/" + relativePath.string();
+
+					SDL_Log("%s", new_path);
+
+					// Add file to PCK
+					pckFile->addFileFromDisk(dir_entry.path().string(), fullPathInPck, PCKAssetFile::getPreferredAssetType(dir_entry.path().string()));
+				}
 			}
 			catch (std::exception& ex)
 			{
@@ -770,7 +825,7 @@ void UIImGui::ShowFileDropPopUp(const std::string& filepath)
 	if (gPopupState != PopupState::NONE)
 		return;
 
-	printf("DROPPED FILE: %s\n", gDroppedFilePath.c_str());
+	printf("DROPPED PATH: %s\n", gDroppedFilePath.c_str());
 
 	std::filesystem::path path = std::filesystem::path(filepath);
 
@@ -789,9 +844,16 @@ void UIImGui::ShowFileDropPopUp(const std::string& filepath)
 		if (!pckExists)
 			gApp->GetInstance()->LoadPCKFile(gDroppedFilePath);
 	}
-	else if(pckExists && !std::filesystem::is_directory(path)) // files only (and only when a pck is loaded)
+	else if(pckExists) // only accept non pck file drag and drop when a pck is already opened
 	{
 		gDroppedFilePath = filepath;
-		gPopupState = PopupState::INSERT_FILE; // go right to insert file only
+		if (!std::filesystem::is_directory(path)) // files
+		{
+			gPopupState = PopupState::IMPORT_FILE; // insert file
+		}
+		else // directories
+		{
+			gPopupState = PopupState::IMPORT_DIRECTORY; // insert directory
+		}
 	}
 }

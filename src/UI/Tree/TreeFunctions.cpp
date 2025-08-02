@@ -140,6 +140,7 @@ void BuildFileTree() {
 	gApp->GetInstance()->treeNodes = std::move(root.children);
 }
 
+// TODO: Move to UIBase
 void ScrollToNode(bool& keyScrolled)
 {
 	if (!keyScrolled)
