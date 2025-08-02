@@ -766,20 +766,24 @@ void UIImGui::ShowFileDropPopUp(const std::string& filepath)
 
 	printf("DROPPED FILE: %s\n", gDroppedFilePath.c_str());
 
+	std::filesystem::path path = std::filesystem::path(filepath);
+
+	bool pckExists = gApp->GetInstance()->GetCurrentPCKFile();
+
 	gDroppedFilePath = "";
 	// This is for PCK Files only; i.e.; let the user decide whether to open the file or to ADD it to the already opened PCK
-	if (std::filesystem::path(filepath).extension().string() == ".pck")
+	if (path.extension().string() == ".pck")
 	{
 		gDroppedFilePath = filepath;
-		bool showFileDropPopUp = gApp->GetInstance()->GetCurrentPCKFile();
-		if (showFileDropPopUp)
+		
+		if (pckExists)
 			gPopupState = PopupState::PCK_FILE_DROP;// display PCK File popup only if file is opened
 
 		// if initially dropped when there is no PCK file opened
-		if (!showFileDropPopUp)
+		if (!pckExists)
 			gApp->GetInstance()->LoadPCKFile(gDroppedFilePath);
 	}
-	else
+	else if(pckExists && !std::filesystem::is_directory(path)) // files only (and only when a pck is loaded)
 	{
 		gDroppedFilePath = filepath;
 		gPopupState = PopupState::INSERT_FILE; // go right to insert file only
