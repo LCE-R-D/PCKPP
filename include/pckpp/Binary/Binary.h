@@ -10,7 +10,7 @@ namespace Binary
 	{
 		LITTLE,
 		BIG,
-		ENDIANESS_TOTAL
+		ENDIANNESS_TOTAL
 	};
 
 	// Encoding used for reading in Text files, like CSM and property .txt files
