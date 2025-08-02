@@ -1,3 +1,4 @@
+#include <locale>
 #include <codecvt>
 #include <pckpp/Binary/Binary.h>
 
