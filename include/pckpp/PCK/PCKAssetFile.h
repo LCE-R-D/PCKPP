@@ -55,28 +55,31 @@ public:
 		return getAssetTypeString(mAssetType);
 	}
 
+	// All the types as all the strings :3
+	static constexpr const char* AssetTypeStrings[] = {
+		"SKIN",
+		"CAPE",
+		"TEXTURE",
+		"UI_DATA",
+		"INFO",
+		"TEXTURE_PACK_INFO",
+		"LOCALISATION",
+		"GAME_RULES",
+		"AUDIO_DATA",
+		"COLOUR_TABLE",
+		"GAME_RULES_HEADER",
+		"SKIN_DATA",
+		"MODELS",
+		"BEHAVIOURS",
+		"MATERIALS"
+	};
+
 	// Gets a asset type as a string
 	static constexpr const char* getAssetTypeString(Type type)
 	{
-		switch (type)
-		{
-		case Type::SKIN: return "SKIN";
-		case Type::CAPE: return "CAPE";
-		case Type::TEXTURE: return "TEXTURE";
-		case Type::UI_DATA: return "UI_DATA";
-		case Type::INFO: return "INFO";
-		case Type::TEXTURE_PACK_INFO: return "TEXTURE_PACK_INFO";
-		case Type::LOCALISATION: return "LOCALISATION";
-		case Type::GAME_RULES: return "GAME_RULES";
-		case Type::AUDIO_DATA: return "AUDIO_DATA";
-		case Type::COLOUR_TABLE: return "COLOUR_TABLE";
-		case Type::GAME_RULES_HEADER: return "GAME_RULES_HEADER";
-		case Type::SKIN_DATA: return "SKIN_DATA";
-		case Type::MODELS: return "MODELS";
-		case Type::BEHAVIOURS: return "BEHAVIOURS";
-		case Type::MATERIALS: return "MATERIALS";
-		default: return "UNKNOWN";
-		}
+		int iType = (int)type;
+		int iTotal = (int)Type::PCK_ASSET_TYPES_TOTAL;
+		return iType >= iTotal ? "UNKNOWN" : AssetTypeStrings[iType];
 	}
 
 	// Gets a asset type as a string for dialogs
