@@ -30,11 +30,9 @@ if(WIN32)
     endif()
 endif()
 
-add_executable(PCKPP ${SRC} ${RESOURCE_FILES})
-
 find_package(OpenGL REQUIRED)
-target_link_libraries(PCKPP PRIVATE OpenGL::GL)
-target_link_libraries(PCKPP PRIVATE OpenGL::GLU)
+
+add_executable(PCKPP ${SRC} ${RESOURCE_FILES})
 
 add_subdirectory(vendor/glad)
 target_link_libraries(PCKPP PRIVATE glad)
@@ -60,13 +58,21 @@ target_link_libraries(imgui PRIVATE SDL3::SDL3)
 
 target_link_libraries(PCKPP PRIVATE imgui)
 
-target_link_libraries(imgui PRIVATE opengl32)
+if(WIN32)
+    target_link_libraries(PCKPP PRIVATE OpenGL::GL)
+    target_link_libraries(PCKPP PRIVATE OpenGL::GLU)
 
-set(SDL3_DLL "${CMAKE_BINARY_DIR}/vendor/SDL/SDL3.dll")
+    target_link_libraries(imgui PRIVATE opengl32)
+
+    set(SDL3_DLL "${CMAKE_BINARY_DIR}/vendor/SDL/SDL3.dll")
+
+    add_custom_command(TARGET PCKPP POST_BUILD 
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDL3_DLL}" $<TARGET_FILE_DIR:PCKPP>
+    )
+else()
+    target_link_libraries(imgui PRIVATE OpenGL::GL)
+endif()
 
 add_custom_command(TARGET PCKPP POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDL3_DLL}" $<TARGET_FILE_DIR:PCKPP>
-
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:PCKPP>/assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:PCKPP>/assets
 )
