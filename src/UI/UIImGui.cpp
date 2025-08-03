@@ -19,6 +19,7 @@ const char* PCK_FILE_DROP_POPUP_TITLE = "PCK File Functions";
 const char* IMPORT_FILE_POPUP_TITLE = "Import File";
 const char* IMPORT_DIRECTORY_POPUP_TITLE = "Import Directory";
 const char* RENAME_POPUP_TITLE = "Rename Node";
+const char* EDIT_PROPERTIES_POPUP_TITLE = "Edit Properties";
 
 enum class PopupState {
 	NONE,
@@ -26,6 +27,7 @@ enum class PopupState {
 	IMPORT_FILE,
 	IMPORT_DIRECTORY,
 	RENAME,
+	EDIT_PROPERTIES,
 };
 
 PopupState gPopupState = PopupState::NONE;
@@ -540,6 +542,65 @@ void UIImGui::RenderFileTree()
 		ImGui::EndPopup();
 	}
 
+	static char properties[0xFFFF];
+
+	if (gPopupState == PopupState::EDIT_PROPERTIES)
+	{
+		if (selectedFile)
+		{
+			memset(properties, 0, sizeof(properties));
+
+			// Format properties into lines like "key=value"
+			std::ostringstream oss;
+			for (const auto& prop : selectedFile->getProperties())
+			{
+				oss << prop.first << " " << Binary::ToUTF8(prop.second) << "\n";
+			}
+
+			std::string propsStr = oss.str();
+			std::strncpy(properties, propsStr.c_str(), sizeof(properties) - 1); // Avoid overflow
+
+			ImGui::OpenPopup(EDIT_PROPERTIES_POPUP_TITLE);
+		}
+
+		gPopupState = PopupState::NONE;
+	}
+
+	// Edit properties popup
+	if (ImGui::BeginPopupModal(EDIT_PROPERTIES_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::InputTextMultiline("###properties", properties, IM_ARRAYSIZE(properties));
+
+		if (ImGui::Button("Save"))
+		{
+			std::istringstream iss(properties);
+			std::string line;
+
+			selectedFile->clearProperties();
+
+			while (std::getline(iss, line))
+			{
+				auto spacePos = line.find(' ');
+				if (spacePos == std::string::npos) continue;
+
+				std::string key = line.substr(0, spacePos);
+				std::string value = line.substr(spacePos + 1);
+				selectedFile->addProperty(key, Binary::ToUTF16(value));
+			}
+
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel"))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
 	ImGui::End();
 }
 
@@ -619,6 +680,10 @@ static void RenderPropertiesContextMenu(PCKAssetFile& file, int propertyIndex = 
 		{
 			file.removeProperty(propertyIndex);
 		}
+		if (ImGui::MenuItem("Bulk Edit Properties"))
+		{
+			gPopupState = PopupState::EDIT_PROPERTIES;
+		}
 		ImGui::EndPopup();
 	}
 }
@@ -649,6 +714,10 @@ void UIImGui::RenderPropertiesWindow(const PCKAssetFile& file)
 	{
 		if (ImGui::MenuItem("Add"))
 			editableFile.addProperty("KEY", u"VALUE");
+		if (file.getProperties().size() > 0 && ImGui::MenuItem("Bulk Edit Properties"))
+		{
+			gPopupState = PopupState::EDIT_PROPERTIES;
+		}
 		ImGui::EndPopup();
 	}
 
