@@ -1,6 +1,7 @@
 #include <functional>
 #include <pckpp/UI/Menu/MenuFunctions.h>
 #include <pckpp/UI/Tree/TreeFunctions.h>
+#include <pckpp/Util/Util.h>
 
 void TreeToPCKFileCollection(std::vector<FileTreeNode>& treeNodes)
 {
@@ -52,6 +53,39 @@ FileTreeNode* FindNodeByPath(const std::string& path, std::vector<FileTreeNode>&
 			return found;
 	}
 	return nullptr;
+}
+
+void RenameDirectory(const std::string& targetPath, const std::string& newName, std::vector<FileTreeNode>& nodes)
+{
+	for (auto& node : nodes)
+	{
+		if (node.file)
+		{
+			std::string oldPath = node.file->getPath();
+			std::replace(oldPath.begin(), oldPath.end(), '\\', '/');
+
+			if (String::startsWith(oldPath, (targetPath)))
+			{
+				std::string subPath = oldPath.substr(targetPath.size());
+
+				// Remove double slashies
+				if (!subPath.empty() && subPath[0] == '/')
+					subPath.erase(0, 1);
+
+				std::filesystem::path baseNewName(newName);
+				std::filesystem::path sub(subPath);
+				std::filesystem::path newPath = baseNewName / sub;
+
+				std::string newPathStr = newPath.generic_string();
+
+				printf("Renaming: %s -> %s\n", oldPath.c_str(), newPathStr.c_str());
+
+				node.file->setPath(newPathStr);
+			}
+		}
+
+		RenameDirectory(targetPath, newName, node.children);
+	}
 }
 
 void DeleteNode(FileTreeNode& targetNode, std::vector<FileTreeNode>& nodes)
@@ -119,12 +153,15 @@ void BuildFileTree() {
 
 			currentPath /= part;
 
+			std::string normalizedCurrent = currentPath.string();
+			std::replace(normalizedCurrent.begin(), normalizedCurrent.end(), '\\', '/');
+
 			auto it = std::find_if(current->children.begin(), current->children.end(), [&](const FileTreeNode& n) {
-				return !n.file && n.path == currentPath.string();
+				return !n.file && n.path == normalizedCurrent;
 				});
 
 			if (it == current->children.end()) {
-				current->children.push_back(FileTreeNode{ currentPath.string(), nullptr });
+				current->children.push_back(FileTreeNode{ normalizedCurrent, nullptr });
 				current = &current->children.back();
 			}
 			else {

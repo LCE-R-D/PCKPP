@@ -18,12 +18,14 @@ std::string gDroppedFilePath;
 const char* PCK_FILE_DROP_POPUP_TITLE = "PCK File Functions";
 const char* IMPORT_FILE_POPUP_TITLE = "Import File";
 const char* IMPORT_DIRECTORY_POPUP_TITLE = "Import Directory";
+const char* RENAME_POPUP_TITLE = "Rename Node";
 
 enum class PopupState {
 	NONE,
 	PCK_FILE_DROP,
 	IMPORT_FILE,
 	IMPORT_DIRECTORY,
+	RENAME,
 };
 
 PopupState gPopupState = PopupState::NONE;
@@ -329,7 +331,7 @@ void UIImGui::RenderFileTree()
 			shouldScroll = true;
 	}
 
-	const PCKAssetFile* selectedFile = nullptr;
+	PCKAssetFile* selectedFile = nullptr;
 	for (const auto& _ : gInstance->treeNodes) {
 
 		FileTreeNode* selectedNode = FindNodeByPath(gInstance->selectedNodePath, gInstance->treeNodes);
@@ -485,6 +487,59 @@ void UIImGui::RenderFileTree()
 		ImGui::EndPopup();
 	}
 
+	if (gPopupState == PopupState::RENAME)
+	{
+		if (selectedFile)
+		{
+			ImGui::OpenPopup(RENAME_POPUP_TITLE);
+			std::strcpy(new_path, selectedFile->getPath().c_str()); // set new_path with the existing path
+		}
+		else if(!gInstance->selectedNodePath.empty())
+		{
+			//directory handling
+			ImGui::OpenPopup(RENAME_POPUP_TITLE);
+			std::strcpy(new_path, gInstance->selectedNodePath.c_str()); // set new_path with the existing folder path
+		}
+		gPopupState = PopupState::NONE;
+	}
+
+	// Import directory popup
+	if (ImGui::BeginPopupModal(RENAME_POPUP_TITLE, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::InputText("Full file path", new_path, IM_ARRAYSIZE(new_path));
+
+		if (ImGui::Button("Rename"))
+		{
+			try
+			{
+				if(selectedFile)
+					selectedFile->setPath(new_path);
+				else
+				{
+					RenameDirectory(gInstance->selectedNodePath, new_path, gInstance->treeNodes);
+				}
+			}
+			catch (std::exception& ex)
+			{
+				platform->mDialog.ShowError("Error", ex.what());
+			}
+			catch (...)
+			{
+				platform->mDialog.ShowError("Error", "Unknown error occured");
+			}
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel"))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
 	ImGui::End();
 }
 
@@ -535,6 +590,9 @@ void UIImGui::RenderContextMenu(FileTreeNode& node)
 				SetFilePropertiesDialog(*node.file);
 			}
 			ImGui::EndMenu();
+		}
+		if (ImGui::MenuItem("Rename")) {
+			gPopupState = PopupState::RENAME;
 		}
 		if (ImGui::MenuItem("Delete")) {
 			if (platform->ShowYesNoMessagePrompt("Are you sure?", "This is permanent and cannot be undone.\nIf this is a folder, all sub-files will be deleted too."))

@@ -17,6 +17,9 @@ void TreeToPCKFileCollection(std::vector<FileTreeNode>& treeNodes);
 // Finds a node by path in a given file tree
 FileTreeNode* FindNodeByPath(const std::string& path, std::vector<FileTreeNode>& nodes);
 
+// Renames a directory
+void RenameDirectory(const std::string& targetPath, const std::string& newName, std::vector<FileTreeNode>& nodes);
+
 // Deletes a node in a given file tree
 void DeleteNode(FileTreeNode& targetNode, std::vector<FileTreeNode>& nodes);
 
