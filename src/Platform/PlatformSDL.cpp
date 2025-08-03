@@ -104,16 +104,12 @@ std::string PlatformSDL::FileDialog::ShowDialog(SDL_FileDialogType type, const s
 	gSelectedPath.clear();
 	SDL_PropertiesID props = SDL_CreateProperties();
 
-	std::vector<std::string> filterLabels;
-	std::vector<std::string> filterPatterns;
 	std::vector<SDL_DialogFileFilter> sdlFilters;
 
 	for (const auto& f : filters) {
-		filterLabels.push_back(f.label);
-		filterPatterns.push_back(f.pattern);
 		sdlFilters.push_back({
-			filterLabels.back().c_str(),
-			filterPatterns.back().c_str()
+			f.label.c_str(),
+			f.pattern.c_str()
 			});
 	}
 

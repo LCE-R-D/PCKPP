@@ -84,7 +84,7 @@ void SavePCKFile(const std::string& outpath, Binary::Endianness endianness)
 void SetFilePropertiesDialog(PCKAssetFile& file)
 {
 	static PlatformBase::FileDialogBase::FileFilter filters[] = {
-		{ "Text File", "*.txt" },
+		{ "Text File", "txt" },
 		{ "All Files", "*" }
 	};
 
@@ -214,14 +214,6 @@ PlatformBase::FileDialogBase::FileFilter GetFilter(const PCKAssetFile& file)
 
 bool SetFileDataDialog(PCKAssetFile& file)
 {
-	std::filesystem::path filePath(file.getPath());
-
-	std::string ext = filePath.extension().string();
-	if (!ext.empty() && ext[0] == '.')
-		ext.erase(0, 1);
-
-	std::string label = std::string(file.getAssetTypeString()) + " File | *." + ext + " File";
-
 	PlatformBase::FileDialogBase::FileFilter filters[] = {
 		GetFilter(file),
 		{ "All Files", "*" }
