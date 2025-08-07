@@ -1,5 +1,5 @@
 #include <functional>
-#include <pckpp/UI/Menu/MenuFunctions.h>
+#include <pckpp/UI/MenuFunctions.h>
 #include <pckpp/UI/Tree/TreeFunctions.h>
 #include <pckpp/Util.h>
 

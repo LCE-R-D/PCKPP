@@ -1,6 +1,6 @@
 #include <pckpp/Application.h>
 #include <pckpp/Program/Program.h>
-#include <pckpp/UI/Menu/MenuFunctions.h>
+#include <pckpp/UI/MenuFunctions.h>
 
 // just for the sake of making things a little clearer
 DefaultApp* gApp = new DefaultApp();

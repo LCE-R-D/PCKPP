@@ -1,7 +1,7 @@
 #include <sstream>
 #include <pckpp/Application.h>
 #include <pckpp/Program/Program.h>
-#include <pckpp/UI/Menu/MenuFunctions.h>
+#include <pckpp/UI/MenuFunctions.h>
 #include <pckpp/Util.h>
 
 static PlatformBase::FileDialogBase::FileFilter pckFilter[] = {
