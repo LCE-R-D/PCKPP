@@ -31,10 +31,10 @@ public:
 	virtual void RenderContextMenu(FileTreeNode& node) = 0;
 
 	// Renders the preview window in the main program form, takes file to preview
-	virtual void RenderPreviewWindow(const PCKAssetFile& file) = 0;
+	virtual void RenderPreviewWindow(PCKAssetFile& file) = 0;
 
 	// Renders the properties window in the main program form, takes file to get properties from lol
-	virtual void RenderPropertiesWindow(const PCKAssetFile& file) = 0;
+	virtual void RenderPropertiesWindow(PCKAssetFile& file) = 0;
 
 	// Renders a node on the node tree; TODO: probably clean up the function's parameters. This seems unnecessary.
 	virtual void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr, bool shouldScroll = false, bool openFolder = false, bool closeFolder = false) = 0;

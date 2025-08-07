@@ -27,7 +27,7 @@ enum class PopupState {
 	IMPORT_FILE,
 	IMPORT_DIRECTORY,
 	RENAME,
-	EDIT_PROPERTIES,
+	EDIT_PROPERTIES
 };
 
 PopupState gPopupState = PopupState::NONE;
@@ -131,76 +131,79 @@ void UIImGui::Shutdown() {
     ImGui::DestroyContext();
 }
 
-void UIImGui::RenderPreviewWindow(const PCKAssetFile& file)
+void UIImGui::RenderPreviewWindow(PCKAssetFile& file)
 {
 	static bool zoomChanged = false;
 	static float userZoom = 1.0f;
 
-	// if ID is valid AND last file is not the current file
-	if (gApp->GetPreviewTexture().id != 0 && gLastPreviewedFile != &file) {
-		ResetPreviewWindow();
-		zoomChanged = false;
-		userZoom = 1.0f;
+	switch (file.getAssetType())
+	{
+	default: // default to images
+		// if ID is valid AND last file is not the current file
+		if (gApp->GetPreviewTexture().id != 0 && gLastPreviewedFile != &file) {
+			ResetPreviewWindow();
+			zoomChanged = false;
+			userZoom = 1.0f;
+		}
+
+		if (gLastPreviewedFile != &file) {
+			gApp->SetPreviewTexture(gApp->GetGraphics()->LoadTextureFromMemory(file.getData().data(), file.getFileSize()));
+			gLastPreviewedFile = &file;
+			gPreviewTitle = file.getPath() + " (" + std::to_string(gApp->GetPreviewTexture().width) + "x" + std::to_string(gApp->GetPreviewTexture().height) + ")###Preview";
+
+			userZoom = 1.0f;
+			zoomChanged = false;
+		}
+
+		// at this point, any changes to preview texture should be done
+
+		auto& previewTexture = gApp->GetPreviewTexture();
+
+		if (previewTexture.id == 0) return;
+
+		int texWidth = previewTexture.width;
+		int texHeight = previewTexture.height;
+
+		float previewPosX = ImGui::GetIO().DisplaySize.x * 0.25f;
+		ImVec2 previewWindowSize(ImGui::GetIO().DisplaySize.x * 0.75f, ImGui::GetIO().DisplaySize.y - (ImGui::GetIO().DisplaySize.y * 0.35f));
+		ImGui::SetNextWindowPos(ImVec2(previewPosX, ImGui::GetFrameHeight()), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(previewWindowSize, ImGuiCond_Always);
+
+		ImGui::Begin(gPreviewTitle.c_str(), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
+			ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("PreviewScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+		if (ImGui::IsWindowHovered() && ImGui::GetIO().KeyCtrl && ImGui::GetIO().MouseWheel != 0.0f) {
+			float zoomDelta = ImGui::GetIO().MouseWheel * 0.1f;
+			userZoom = std::clamp(userZoom * (1.0f + zoomDelta), 0.01f, 100.0f); // this clamp is a little weird but it works lol
+			zoomChanged = true;
+		}
+
+		ImVec2 availSize = ImGui::GetContentRegionAvail();
+
+		if (!zoomChanged && userZoom == 1.0f) {
+			userZoom = std::min(availSize.x / texWidth, availSize.y / texHeight);
+		}
+
+		ImVec2 imageSize = ImVec2(texWidth * userZoom, texHeight * userZoom);
+
+		ImVec2 cursorPos = ImGui::GetCursorPos();
+		if (imageSize.x < availSize.x) cursorPos.x += (availSize.x - imageSize.x) / 2.0f;
+		if (imageSize.y < availSize.y) cursorPos.y += (availSize.y - imageSize.y) / 2.0f;
+		ImGui::SetCursorPos(cursorPos);
+		ImGui::Image((ImTextureID)(intptr_t)previewTexture.id, imageSize);
+
+		std::stringstream ss;
+		ss << "Zoom: " << std::fixed << std::setprecision(2) << (userZoom * 100.0f) << "%";
+		std::string zoomText = ss.str();
+		ImVec2 textSize = ImGui::CalcTextSize(zoomText.c_str());
+		ImVec2 textPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x - textSize.x - 20, ImGui::GetWindowPos().y);
+		ImGui::SetCursorScreenPos(textPos);
+		ImGui::TextUnformatted(zoomText.c_str());
+
+		ImGui::EndChild();
 	}
-
-	if (gLastPreviewedFile != &file) {
-		gApp->SetPreviewTexture(gApp->GetGraphics()->LoadTextureFromMemory(file.getData().data(), file.getFileSize()));
-		gLastPreviewedFile = &file;
-		gPreviewTitle = file.getPath() + " (" + std::to_string(gApp->GetPreviewTexture().width) + "x" + std::to_string(gApp->GetPreviewTexture().height) + ")###Preview";
-
-		userZoom = 1.0f;
-		zoomChanged = false;
-	}
-
-	// at this point, any changes to preview texture should be done
-
-	auto& previewTexture = gApp->GetPreviewTexture();
-
-	if (previewTexture.id == 0) return;
-
-	int texWidth = previewTexture.width;
-	int texHeight = previewTexture.height;
-
-	float previewPosX = ImGui::GetIO().DisplaySize.x * 0.25f;
-	ImVec2 previewWindowSize(ImGui::GetIO().DisplaySize.x * 0.75f, ImGui::GetIO().DisplaySize.y - (ImGui::GetIO().DisplaySize.y * 0.35f));
-	ImGui::SetNextWindowPos(ImVec2(previewPosX, ImGui::GetFrameHeight()), ImGuiCond_Always);
-	ImGui::SetNextWindowSize(previewWindowSize, ImGuiCond_Always);
-
-	ImGui::Begin(gPreviewTitle.c_str(), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
-		ImGuiWindowFlags_HorizontalScrollbar);
-	ImGui::BeginChild("PreviewScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
-
-	if (ImGui::IsWindowHovered() && ImGui::GetIO().KeyCtrl && ImGui::GetIO().MouseWheel != 0.0f) {
-		float zoomDelta = ImGui::GetIO().MouseWheel * 0.1f;
-		userZoom = std::clamp(userZoom * (1.0f + zoomDelta), 0.01f, 100.0f); // this clamp is a little weird but it works lol
-		zoomChanged = true;
-	}
-
-	ImVec2 availSize = ImGui::GetContentRegionAvail();
-
-	if (!zoomChanged && userZoom == 1.0f) {
-		userZoom = std::min(availSize.x / texWidth, availSize.y / texHeight);
-	}
-
-	ImVec2 imageSize = ImVec2(texWidth * userZoom, texHeight * userZoom);
-
-	ImVec2 cursorPos = ImGui::GetCursorPos();
-	if (imageSize.x < availSize.x) cursorPos.x += (availSize.x - imageSize.x) / 2.0f;
-	if (imageSize.y < availSize.y) cursorPos.y += (availSize.y - imageSize.y) / 2.0f;
-	ImGui::SetCursorPos(cursorPos);
-	ImGui::Image((ImTextureID)(intptr_t)previewTexture.id, imageSize);
-
-	std::stringstream ss;
-	ss << "Zoom: " << std::fixed << std::setprecision(2) << (userZoom * 100.0f) << "%";
-	std::string zoomText = ss.str();
-	ImVec2 textSize = ImGui::CalcTextSize(zoomText.c_str());
-	ImVec2 textPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x - textSize.x - 20, ImGui::GetWindowPos().y);
-	ImGui::SetCursorScreenPos(textPos);
-	ImGui::TextUnformatted(zoomText.c_str());
-
-	ImGui::EndChild();
-	ImGui::End();
 }
 
 void UIImGui::RenderMenuBar()
@@ -688,7 +691,7 @@ static void RenderPropertiesContextMenu(PCKAssetFile& file, int propertyIndex = 
 	}
 }
 
-void UIImGui::RenderPropertiesWindow(const PCKAssetFile& file)
+void UIImGui::RenderPropertiesWindow(PCKAssetFile& file)
 {
 	if (gLastPreviewedFile != &file) {
 		gLastPreviewedFile = &file;
@@ -707,13 +710,10 @@ void UIImGui::RenderPropertiesWindow(const PCKAssetFile& file)
 		ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
 		ImGuiWindowFlags_HorizontalScrollbar);
 
-	// very stupid lol
-	PCKAssetFile& editableFile = const_cast<PCKAssetFile&>(file);
-
 	if (ImGui::BeginPopupContextWindow("PropertiesContextWindow"))
 	{
 		if (ImGui::MenuItem("Add"))
-			editableFile.addProperty("KEY", u"VALUE");
+			file.addProperty("KEY", u"VALUE");
 		if (file.getProperties().size() > 0 && ImGui::MenuItem("Bulk Edit Properties"))
 		{
 			gPopupState = PopupState::EDIT_PROPERTIES;
@@ -767,7 +767,7 @@ void UIImGui::RenderPropertiesWindow(const PCKAssetFile& file)
 					modified = true;
 
 				// context menu
-				RenderPropertiesContextMenu(editableFile, propertyIndex);
+				RenderPropertiesContextMenu(file, propertyIndex);
 
 				ImGui::TableSetColumnIndex(1);
 				std::string valueLabel = "##Value" + std::to_string(propertyIndex);
@@ -776,7 +776,7 @@ void UIImGui::RenderPropertiesWindow(const PCKAssetFile& file)
 					modified = true;
 
 				// context menu; again because I want it to work with both rows
-				RenderPropertiesContextMenu(editableFile, propertyIndex);
+				RenderPropertiesContextMenu(file, propertyIndex);
 
 				if (modified)
 				{
@@ -784,7 +784,7 @@ void UIImGui::RenderPropertiesWindow(const PCKAssetFile& file)
 					for (char& c : keyText)
 						c = std::toupper(c);
 
-					editableFile.setPropertyAtIndex(propertyIndex, keyText.empty() ? "KEY" : keyText, Binary::ToUTF16(valueBuffer));
+					file.setPropertyAtIndex(propertyIndex, keyText.empty() ? "KEY" : keyText, Binary::ToUTF16(valueBuffer));
 				}
 
 				++propertyIndex;
@@ -824,6 +824,7 @@ void UIImGui::RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* v
 	if (visibleList)
 		visibleList->push_back(&node);
 
+	const auto& platform = gApp->GetPlatform();
 	const bool isFolder = (node.file == nullptr);
 	const bool isSelected = (node.path == gInstance->selectedNodePath);
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
@@ -882,7 +883,7 @@ void UIImGui::RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* v
 			ImGui::TreePop();
 		}
 	}
-	else // File Nodes
+	else if (node.file) // File Nodes
 	{
 		const PCKAssetFile& file = *node.file;
 		ImGui::Image((void*)(intptr_t)gApp->GetFileIcon(file.getAssetType()).id, ImVec2(48, 48));

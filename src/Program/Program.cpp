@@ -36,11 +36,11 @@ void HandleInput()
 }
 
 // Renders and handles window to preview the currently selected file if any data is previewable
-static void HandlePreviewWindow(const PCKAssetFile& file) {
+static void HandlePreviewWindow(PCKAssetFile& file) {
 	gApp->GetUI()->RenderPreviewWindow(file);
 }
 
-static void HandlePropertiesWindow(const PCKAssetFile& file)
+static void HandlePropertiesWindow(PCKAssetFile& file)
 {
 	gApp->GetUI()->RenderPropertiesWindow(file);
 }

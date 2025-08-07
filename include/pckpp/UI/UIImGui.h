@@ -39,10 +39,10 @@ public:
     void RenderContextMenu(FileTreeNode& node) override;
 
     // Renders the preview window in the main program form using ImGui elements, takes file to preview
-    void RenderPreviewWindow(const PCKAssetFile& file) override;
+    void RenderPreviewWindow(PCKAssetFile& file) override;
 
     // Renders the properties window in the main program form using ImGui elements, takes file to get properties from lol
-    void RenderPropertiesWindow(const PCKAssetFile& file) override;
+    void RenderPropertiesWindow(PCKAssetFile& file) override;
 
     // Renders a node on the node tree using ImGui elements; TODO: probably clean up the function's parameters. This seems unnecessary.
     void RenderNode(FileTreeNode& node, std::vector<const FileTreeNode*>* visibleList = nullptr, bool shouldScroll = false, bool openFolder = false, bool closeFolder = false) override;
