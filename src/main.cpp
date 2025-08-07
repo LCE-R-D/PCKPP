@@ -1,6 +1,6 @@
 ﻿// PCK++ by May/MattNL :3
 
-#include <pckpp/Application/Application.h>
+#include <pckpp/Application.h>
 #include <pckpp/Program/Program.h>
 
 #include <pckpp/Backends/ImGuiSDLPlatformBackend.hpp>

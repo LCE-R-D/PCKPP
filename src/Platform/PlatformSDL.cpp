@@ -1,6 +1,6 @@
 #include <mutex>
 #include <condition_variable>
-#include <pckpp/Application/Application.h>
+#include <pckpp/Application.h>
 #include <pckpp/Platform/PlatformSDL.h>
 
 PlatformSDL::~PlatformSDL() {

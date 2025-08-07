@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pckpp/Application/Application.h>
+#include <pckpp/Application.h>
 #include <pckpp/Binary/Binary.h>
 #include <pckpp/PCK/PCKAssetFile.h>
 #include <pckpp/UI/Tree/TreeNode.h>

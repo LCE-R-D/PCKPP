@@ -1,6 +1,6 @@
 ﻿#include <map>
 #include <sstream>
-#include <pckpp/Application/Application.h>
+#include <pckpp/Application.h>
 #include <pckpp/PCK/PCKAssetFile.h>
 #include <pckpp/Program/Program.h>
 #include <pckpp/UI/Tree/TreeFunctions.h>

@@ -4,7 +4,7 @@
 #include <pckpp/UI/UIImGui.h>
 #include <pckpp/UI/Menu/MenuFunctions.h>
 #include <pckpp/UI/Tree/TreeFunctions.h>
-#include <pckpp/Util/Util.h>
+#include <pckpp/Util.h>
 
 // Preview globals
 std::string gPreviewTitle = "Preview";

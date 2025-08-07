@@ -1,4 +1,4 @@
-#include <pckpp/Application/Application.h>
+#include <pckpp/Application.h>
 #include <pckpp/Program/Program.h>
 #include <pckpp/UI/Menu/MenuFunctions.h>
 

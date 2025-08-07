@@ -76,9 +76,9 @@ private:
 };
 
 // Setup your custom application stuff below :3
-#include "../Platform/PlatformSDL.h"
-#include "../Graphics/GraphicsOpenGL.h"
-#include "../UI/UIImGui.h"
+#include <pckpp/Platform/PlatformSDL.h>
+#include <pckpp/Graphics/GraphicsOpenGL.h>
+#include <pckpp/UI/UIImGui.h>
 
 using DefaultGraphics = GraphicsOpenGL;
 using DefaultUI = UIImGui;

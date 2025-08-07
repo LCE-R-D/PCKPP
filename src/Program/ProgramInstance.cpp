@@ -1,4 +1,4 @@
-#include <pckpp/Application/Application.h>
+#include <pckpp/Application.h>
 #include <pckpp/Program/ProgramInstance.h>
 
 void ProgramInstance::Reset() {

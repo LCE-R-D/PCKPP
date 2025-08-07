@@ -1,5 +1,5 @@
 #include <pckpp/Binary/Binary.h>
-#include <pckpp/Util/Util.h>
+#include <pckpp/Util.h>
 
 std::vector<unsigned char> IO::ReadFile(const std::string& path) {
     std::ifstream file(path, std::ios::binary);
