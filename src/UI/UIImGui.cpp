@@ -137,42 +137,50 @@ void UIImGui::RenderPreviewWindow(PCKAssetFile& file)
 	static bool zoomChanged = false;
 	static float userZoom = 1.0f;
 
+	// if ID is valid AND last file is not the current file
+	if (gApp->GetPreviewTexture().id != 0 && gLastPreviewedFile != &file) {
+		ResetPreviewWindow();
+		zoomChanged = false;
+		userZoom = 1.0f;
+	}
+
+	if (gLastPreviewedFile != &file) {
+		gApp->SetPreviewTexture(gApp->GetGraphics()->LoadTextureFromMemory(file.getData().data(), file.getFileSize()));
+		gLastPreviewedFile = &file;
+		gPreviewTitle = file.getPath();
+
+		if(file.isImageType())
+			gPreviewTitle += " (" + std::to_string(gApp->GetPreviewTexture().width) + "x" + std::to_string(gApp->GetPreviewTexture().height) + ")";
+		gPreviewTitle += "###Preview";
+
+		userZoom = 1.0f;
+		zoomChanged = false;
+	}
+
+	// at this point, any changes to preview texture should be done
+
+	auto& previewTexture = gApp->GetPreviewTexture();
+
+	if (previewTexture.id == 0) return;
+
+	int texWidth = previewTexture.width;
+	int texHeight = previewTexture.height;
+
+	float previewPosX = ImGui::GetIO().DisplaySize.x * 0.25f;
+	ImVec2 previewWindowSize(ImGui::GetIO().DisplaySize.x * 0.75f, ImGui::GetIO().DisplaySize.y - (ImGui::GetIO().DisplaySize.y * 0.35f));
+	ImGui::SetNextWindowPos(ImVec2(previewPosX, ImGui::GetFrameHeight()), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(previewWindowSize, ImGuiCond_Always);
+
+	ImGui::Begin(gPreviewTitle.c_str(), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
+		ImGuiWindowFlags_HorizontalScrollbar);
+
 	switch (file.getAssetType())
 	{
+	case PCKAssetFile::Type::SKIN:
+		PreviewSkin(file);
+		break;
 	default: // default to images
-		// if ID is valid AND last file is not the current file
-		if (gApp->GetPreviewTexture().id != 0 && gLastPreviewedFile != &file) {
-			ResetPreviewWindow();
-			zoomChanged = false;
-			userZoom = 1.0f;
-		}
-
-		if (gLastPreviewedFile != &file) {
-			gApp->SetPreviewTexture(gApp->GetGraphics()->LoadTextureFromMemory(file.getData().data(), file.getFileSize()));
-			gLastPreviewedFile = &file;
-			gPreviewTitle = file.getPath() + " (" + std::to_string(gApp->GetPreviewTexture().width) + "x" + std::to_string(gApp->GetPreviewTexture().height) + ")###Preview";
-
-			userZoom = 1.0f;
-			zoomChanged = false;
-		}
-
-		// at this point, any changes to preview texture should be done
-
-		auto& previewTexture = gApp->GetPreviewTexture();
-
-		if (previewTexture.id == 0) return;
-
-		int texWidth = previewTexture.width;
-		int texHeight = previewTexture.height;
-
-		float previewPosX = ImGui::GetIO().DisplaySize.x * 0.25f;
-		ImVec2 previewWindowSize(ImGui::GetIO().DisplaySize.x * 0.75f, ImGui::GetIO().DisplaySize.y - (ImGui::GetIO().DisplaySize.y * 0.35f));
-		ImGui::SetNextWindowPos(ImVec2(previewPosX, ImGui::GetFrameHeight()), ImGuiCond_Always);
-		ImGui::SetNextWindowSize(previewWindowSize, ImGuiCond_Always);
-
-		ImGui::Begin(gPreviewTitle.c_str(), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-			ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
-			ImGuiWindowFlags_HorizontalScrollbar);
 		ImGui::BeginChild("PreviewScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 
 		if (ImGui::IsWindowHovered() && ImGui::GetIO().KeyCtrl && ImGui::GetIO().MouseWheel != 0.0f) {
@@ -205,6 +213,8 @@ void UIImGui::RenderPreviewWindow(PCKAssetFile& file)
 
 		ImGui::EndChild();
 	}
+
+	ImGui::End();
 }
 
 void UIImGui::RenderMenuBar()
