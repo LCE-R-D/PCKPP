@@ -1,77 +1,111 @@
-#include <pckpp/UI/UIImGui.h>
 #include <pckpp/UI/MenuFunctions.h>
+#include <pckpp/UI/SkinBox.h>
 #include <pckpp/UI/Tree/TreeFunctions.h>
+#include <pckpp/UI/UIImGui.h>
 #include <pckpp/Util.h>
-
-static GLuint gSkinPreviewFBO = 0, gSkinPreviewTex = 0;
-constexpr int gSkinPreviewSize = 512;
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 // Globals
+static Texture gSkinTexture{}, gSkinPreviewTex{}, gSkinPreviewFBO{};
 float gRotationX = 0.0f;
 float gRotationY = 0.0f;
 
-void PreviewSkin(PCKAssetFile& file)
+float gPanX = 0.0f;
+float gPanY = 0.0f;
+float gZoom = 25.0f;
+
+void glPerspective(float fovY, float aspect, float zNear, float zFar)
 {
-	float width = ImGui::GetContentRegionAvail().x * 0.75;
-	float height = ImGui::GetContentRegionAvail().y;
+	float fH = tanf(fovY * 0.5f * (M_PI / 180.0f)) * zNear;
+	float fW = fH * aspect;
+	glFrustum(-fW, fW, -fH, fH, zNear, zFar);
+}
 
-	glGenFramebuffers(1, &gSkinPreviewFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, gSkinPreviewFBO);
+void PreviewSkin(PCKAssetFile& file, bool reset)
+{
+    // Load texture from the file data
+    if (gSkinTexture.id == 0 || reset)
+    {
+        GraphicsOpenGL* graphics = gApp->GetGraphics();
+        graphics->DeleteTexture(gSkinTexture);
+        gSkinTexture = graphics->LoadTextureFromMemory(file.getData().data(), file.getFileSize());
+        if(&gSkinPreviewTex)
+            glGenTextures(1, &gSkinPreviewTex.id);
+        if(&gSkinPreviewFBO)
+            glGenFramebuffers(1, &gSkinPreviewFBO.id);
+    }
 
-	glGenTextures(1, &gSkinPreviewTex);
-	glBindTexture(GL_TEXTURE_2D, gSkinPreviewTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gSkinPreviewTex, 0);
+    ImGuiIO& io = ImGui::GetIO();
 
-	GLuint rbo;
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+    bool active = ImGui::IsItemActive();
 
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		fprintf(stderr, "FBO not complete!\n");
+    if (active)
+    {
+        gRotationY += io.MouseDelta.x * 0.25f; // yaw
+        gRotationX += io.MouseDelta.y * 0.25f; // pitch
+    }
 
-	glBindFramebuffer(GL_FRAMEBUFFER, gSkinPreviewFBO);
+    float width = ImGui::GetContentRegionAvail().x * 0.75f;
+    float height = ImGui::GetContentRegionAvail().y;
 
-	// Only rotate if the invisible button (canvas) is active (clicked and held)
-	if (ImGui::IsItemActive() && ImGui::GetIO().MouseDelta.x != 0.0f && ImGui::GetIO().MouseDelta.y != 0.0f)
-	{
-		gRotationX += ImGui::GetIO().MouseDelta.y * 0.25f;
-		gRotationY += ImGui::GetIO().MouseDelta.x * 0.25f;
-	}
+    glBindFramebuffer(GL_FRAMEBUFFER, gSkinPreviewFBO.id);
 
-	glViewport(0, 0, width, height);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindTexture(GL_TEXTURE_2D, gSkinPreviewTex.id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gSkinPreviewTex.id, 0);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, width, 0, height, -1, 1);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        fprintf(stderr, "FBO not complete!\n");
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glRotatef(gRotationX, 1, 0, 0);
-	glRotatef(gRotationY, 0, 1, 0);
-	glTranslatef(width / 2, height / 2, 0);
+    // Draw scene
+    glBindFramebuffer(GL_FRAMEBUFFER, gSkinPreviewFBO.id);
+    glViewport(0, 0, width, height);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // Transparency
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	float triSize = 200.0f;
-	float half = triSize / 2.0f;
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
 
-	glBegin(GL_TRIANGLES);
-	glColor3f(0.0f, 0.0f, 1.0f); glVertex3f(-half, -half, 0.0f);  // bottom-left
-	glColor3f(0.0f, 1.0f, 0.0f); glVertex3f(half, -half, 0.0f);  // bottom-right
-	glColor3f(1.0f, 0.0f, 0.0f); glVertex3f(0.0f, half, 0.0f);  // top-center
-	glEnd();
+    glPerspective(45.0f, width / height, 0.1f, 100.0f);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
-	// Finally display on UI
-	ImGui::Image(
-		reinterpret_cast<void*>((intptr_t)gSkinPreviewTex),
-		ImVec2(width, height),
-		ImVec2(0, 1), ImVec2(1, 0) // Flip Y
-	);
+    // Move camera back
+    glTranslatef(0.0f, 0.0f, -gZoom); // use zoom here
+
+    // Apply pitch and yaw
+    glRotatef(gRotationX, 1, 0, 0);
+    glRotatef(gRotationY, 0, 1, 0);
+
+    // Bind skin texture
+    glBindTexture(GL_TEXTURE_2D, gSkinTexture.id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_CULL_FACE);
+
+    Box head(gSkinTexture.width, gSkinTexture.height, 0, 0, 0, 8, 8, 8, 0, 0);
+    //Box body(gSkinTexture.width, gSkinTexture.height, 0, 0, 0, 8, 12, 4, 16, 16);
+
+    head.Draw();
+    //body.Draw();
+
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_CULL_FACE);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Display in ImGui
+    ImGui::Image((ImTextureID)(intptr_t)gSkinPreviewTex.id, ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+
+    if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f)
+    {
+        gZoom -= io.MouseWheel * 0.5f; // adjust speed here
+    }
 }

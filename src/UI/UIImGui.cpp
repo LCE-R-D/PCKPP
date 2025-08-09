@@ -136,9 +136,11 @@ void UIImGui::RenderPreviewWindow(PCKAssetFile& file)
 {
 	static bool zoomChanged = false;
 	static float userZoom = 1.0f;
+	static bool reset;
 
 	// if ID is valid AND last file is not the current file
 	if (gApp->GetPreviewTexture().id != 0 && gLastPreviewedFile != &file) {
+		reset = true;
 		ResetPreviewWindow();
 		zoomChanged = false;
 		userZoom = 1.0f;
@@ -178,7 +180,8 @@ void UIImGui::RenderPreviewWindow(PCKAssetFile& file)
 	switch (file.getAssetType())
 	{
 	case PCKAssetFile::Type::SKIN:
-		PreviewSkin(file);
+		PreviewSkin(file, reset);
+		reset = false;
 		break;
 	default: // default to images
 		ImGui::BeginChild("PreviewScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
