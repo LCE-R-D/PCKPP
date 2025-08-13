@@ -12,7 +12,7 @@ class Box
 public:
     int textureWidth, textureHeight;
     float x, y, z;
-    float length, height, width;
+    float width, height, depth;
     int u, v;
     int armorMask;
     bool mirrored;
@@ -20,69 +20,66 @@ public:
 
     UVRect front, back, top, bottom, right, left;
 
-    Box(int textureWidth, int textureHeight, float x, float y, float z, float width, float height, float length, float u, float v, int armorMask = 0, bool mirrored = false, float scale = 0.0f)
-        : x(x), y(y), z(z), width(width), height(height), length(width), u(u), v(v), armorMask(armorMask), mirrored(mirrored), scale(scale),
+    Box(int textureWidth, int textureHeight, float x, float y, float z, float width, float height, float depth, float u, float v, int armorMask = 0, bool mirrored = false, float scale = 0.0f)
+        : x(x), y(y), z(z), width(width), height(height), depth(depth), u(u), v(v), armorMask(armorMask), mirrored(mirrored), scale(scale),
         textureWidth(textureWidth), textureHeight(textureHeight)
     {
-        // Normalize inputs
+        // Normalize variables
         float u0 = u / textureWidth;
         float v0 = v / textureHeight;
-        float uvLength = length / textureWidth;
         float uvWidth = width / textureWidth;
         float uvHeight = height / textureHeight;
+        float uvDepthX = depth / textureWidth;
+        float uvDepthY = depth / textureHeight;
 
-        left = { u0, v0 + uvHeight, u0 + uvWidth, v0 + uvHeight * 2 };
-
-        front = { left.u1, left.v0, left.u1 + uvLength, left.v1 };
-
-        right = { front.u1, left.v0, front.u1 + uvWidth, left.v1 };
-
-        back = { right.u1, left.v0, right.u1 + uvLength, left.v1 };
-
-        top = { front.u0, v0, front.u1, v0 + uvHeight };
-
-        bottom = { right.u0, v0, right.u1, v0 + uvHeight };
+        top = { u0 + uvDepthX, v0, u0 + uvWidth + uvDepthX, v0 + uvDepthY };
+        bottom = { top.u1, top.v0, top.u1 + uvWidth, top.v1 };
+        left = { u0, top.v1, top.u0, v0 + uvDepthY + uvHeight};
+        front = { top.u0, top.v1, top.u1, left.v1};
+        right = { top.u1, top.v1, top.u1 + uvDepthX, left.v1};
+        back = { right.u1, top.v1, right.u1 + uvWidth, left.v1};
     }
 
     void Draw() const
     {
         glBegin(GL_QUADS);
 
-        // Front
-        glTexCoord2f(front.u0, front.v1); glVertex3f(-length, -height, width);
-        glTexCoord2f(front.u1, front.v1); glVertex3f(length, -height, width);
-        glTexCoord2f(front.u1, front.v0); glVertex3f(length, height, width);
-        glTexCoord2f(front.u0, front.v0); glVertex3f(-length, height, width);
+        float x0 = x - width + 8.0f;   // min X
+        float y0 = -y - height;  // min Y
+        float z0 = z - depth + 8.0f;   // min Z
+        float x1 = x + width + 8.0f;   // max X
+        float y1 = -y + height;  // max Y
+        float z1 = z + depth + 8.0f;   // max Z
 
-        // Back
-        glTexCoord2f(back.u1, back.v1); glVertex3f(-length, -height, -width);
-        glTexCoord2f(back.u1, back.v0); glVertex3f(-length, height, -width);
-        glTexCoord2f(back.u0, back.v0); glVertex3f(length, height, -width);
-        glTexCoord2f(back.u0, back.v1); glVertex3f(length, -height, -width);
+        glTexCoord2f(front.u0, front.v1); glVertex3f(x0, y0, z1);
+        glTexCoord2f(front.u1, front.v1); glVertex3f(x1, y0, z1);
+        glTexCoord2f(front.u1, front.v0); glVertex3f(x1, y1, z1);
+        glTexCoord2f(front.u0, front.v0); glVertex3f(x0, y1, z1);
 
-        // Top
-        glTexCoord2f(top.u0, top.v1); glVertex3f(-length, height, -width);
-        glTexCoord2f(top.u0, top.v0); glVertex3f(-length, height, width);
-        glTexCoord2f(top.u1, top.v0); glVertex3f(length, height, width);
-        glTexCoord2f(top.u1, top.v1); glVertex3f(length, height, -width);
+        glTexCoord2f(back.u1, back.v1); glVertex3f(x0, y0, z0);
+        glTexCoord2f(back.u1, back.v0); glVertex3f(x0, y1, z0);
+        glTexCoord2f(back.u0, back.v0); glVertex3f(x1, y1, z0);
+        glTexCoord2f(back.u0, back.v1); glVertex3f(x1, y0, z0);
 
-        // Bottom
-        glTexCoord2f(bottom.u1, bottom.v1); glVertex3f(-length, -height, -width);
-        glTexCoord2f(bottom.u0, bottom.v1); glVertex3f(length, -height, -width);
-        glTexCoord2f(bottom.u0, bottom.v0); glVertex3f(length, -height, width);
-        glTexCoord2f(bottom.u1, bottom.v0); glVertex3f(-length, -height, width);
+        glTexCoord2f(top.u0, top.v1); glVertex3f(x0, y1, z0);
+        glTexCoord2f(top.u0, top.v0); glVertex3f(x0, y1, z1);
+        glTexCoord2f(top.u1, top.v0); glVertex3f(x1, y1, z1);
+        glTexCoord2f(top.u1, top.v1); glVertex3f(x1, y1, z0);
 
-        // Right
-        glTexCoord2f(right.u1, right.v1); glVertex3f(length, -height, -width);
-        glTexCoord2f(right.u1, right.v0); glVertex3f(length, height, -width);
-        glTexCoord2f(right.u0, right.v0); glVertex3f(length, height, width);
-        glTexCoord2f(right.u0, right.v1); glVertex3f(length, -height, width);
+        glTexCoord2f(bottom.u1, bottom.v1); glVertex3f(x0, y0, z0);
+        glTexCoord2f(bottom.u0, bottom.v1); glVertex3f(x1, y0, z0);
+        glTexCoord2f(bottom.u0, bottom.v0); glVertex3f(x1, y0, z1);
+        glTexCoord2f(bottom.u1, bottom.v0); glVertex3f(x0, y0, z1);
 
-        // Left
-        glTexCoord2f(left.u0, left.v1); glVertex3f(-length, -height, -width);
-        glTexCoord2f(left.u1, left.v1); glVertex3f(-length, -height, width);
-        glTexCoord2f(left.u1, left.v0); glVertex3f(-length, height, width);
-        glTexCoord2f(left.u0, left.v0); glVertex3f(-length, height, -width);
+        glTexCoord2f(right.u1, right.v1); glVertex3f(x1, y0, z0);
+        glTexCoord2f(right.u1, right.v0); glVertex3f(x1, y1, z0);
+        glTexCoord2f(right.u0, right.v0); glVertex3f(x1, y1, z1);
+        glTexCoord2f(right.u0, right.v1); glVertex3f(x1, y0, z1);
+
+        glTexCoord2f(left.u0, left.v1); glVertex3f(x0, y0, z0);
+        glTexCoord2f(left.u1, left.v1); glVertex3f(x0, y0, z1);
+        glTexCoord2f(left.u1, left.v0); glVertex3f(x0, y1, z1);
+        glTexCoord2f(left.u0, left.v0); glVertex3f(x0, y1, z0);
 
         glEnd();
     }
