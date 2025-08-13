@@ -49,6 +49,7 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
     float previewWidth = ImGui::GetContentRegionAvail().x * 0.75f;
     float previewHeight = ImGui::GetContentRegionAvail().y;
 
+    // Bind and setup FBO and texture
     glBindFramebuffer(GL_FRAMEBUFFER, gSkinPreviewFBO.id);
 
     glBindTexture(GL_TEXTURE_2D, gSkinPreviewTex.id);
@@ -60,44 +61,55 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         fprintf(stderr, "FBO not complete!\n");
 
-    // Draw scene
-    glBindFramebuffer(GL_FRAMEBUFFER, gSkinPreviewFBO.id);
+    // Set viewport and clear buffers
     glViewport(0, 0, previewWidth, previewHeight);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // Transparency
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // Transparent background
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-
-    glPerspective(45.0f, previewWidth / previewHeight, 0.1f, 100.0f);
+    glPerspective(45.0f, (float)previewWidth / (float)previewHeight, 0.1f, 100.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    // Move camera back
-    glTranslatef(0.0f, 0.0f, -gZoom); // use zoom here
-
-    // Apply pitch and yaw
+    glTranslatef(0.0f, 0.0f, -gZoom);
     glRotatef(gRotationX, 1, 0, 0);
     glRotatef(gRotationY, 0, 1, 0);
 
-    // Bind skin texture
     glBindTexture(GL_TEXTURE_2D, gSkinTexture.id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
     glEnable(GL_TEXTURE_2D);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
     glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
 
     Box head(gSkinTexture.width, gSkinTexture.height, -8, -16, -8, 8, 8, 8, 0, 0);
     //Box body(gSkinTexture.width, gSkinTexture.height, -8, 0, -4, 8, 12, 4, 16, 16);
 
     head.Draw();
-    //body.Draw();
 
-    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+
+    Box hat(gSkinTexture.width, gSkinTexture.height, -8, -16, -8, 8, 8, 8, 32, 0, 0, false, 0.5f); // assuming alpha 0.5 for transparency
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+
+    hat.Draw();
+
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
     glDisable(GL_CULL_FACE);
+    glDisable(GL_TEXTURE_2D);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
