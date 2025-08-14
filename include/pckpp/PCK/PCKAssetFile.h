@@ -142,7 +142,7 @@ public:
 		case Type::MATERIALS:
 			return { "bin", nullptr };
 		default:
-			return { "*" }; // any file type
+			return { "*", nullptr }; // any file type
 		}
 	}
 
