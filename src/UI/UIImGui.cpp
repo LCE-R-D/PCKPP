@@ -15,6 +15,7 @@ static const PCKAssetFile* gLastPreviewedFile = nullptr;
 ProgramInstance* gInstance = nullptr;
 
 std::string gDroppedFilePath;
+bool gUpdatePCKCollection;
 
 const char* PCK_FILE_DROP_POPUP_TITLE = "PCK File Functions";
 const char* IMPORT_FILE_POPUP_TITLE = "Import File";
@@ -325,6 +326,12 @@ void UIImGui::RenderFileTree()
 		shouldCloseFolder = !shouldOpenFolder && ImGui::IsKeyPressed(ImGuiKey_LeftArrow);
 	}
 
+	if (gUpdatePCKCollection) // for updating the tree after importing a new file, so the internal file order is not messed up
+	{
+		gUpdatePCKCollection = false;
+		TreeToPCKFileCollection(gInstance->treeNodes);
+	}
+
 	for (auto& node : gInstance->treeNodes)
 		RenderNode(node, &gInstance->visibleNodes, shouldScroll, shouldOpenFolder, shouldCloseFolder);
 
@@ -429,6 +436,7 @@ void UIImGui::RenderFileTree()
 			try
 			{
 				pckFile->addFileFromDisk(gDroppedFilePath, std::string(new_path), static_cast<PCKAssetFile::Type>(typeIndex));
+				gUpdatePCKCollection = true;
 			}
 			catch (std::exception& ex)
 			{
