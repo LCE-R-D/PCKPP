@@ -69,8 +69,11 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
     float previewWidth = ImGui::GetContentRegionAvail().x * 0.75f;
     float previewHeight = ImGui::GetContentRegionAvail().y;
 
+    // Setup OpenGL state
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, 0.01f);
 
     // Bind and setup FBO
     glBindFramebuffer(GL_FRAMEBUFFER, gSkinPreviewFBO.id);
@@ -103,27 +106,32 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
     glRotatef(gRotationX, 1, 0, 0);
     glRotatef(gRotationY, 0, 1, 0);
 
-    // Skin Texture setup
+    // Bind skin texture
     glBindTexture(GL_TEXTURE_2D, gSkinTexture.id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
-    for each(SkinBox box in boxes)
+    // Draw boxes
+    for (const SkinBox& box : boxes)
     {
         box.Draw();
     }
 
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_ALPHA_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     ImGui::Image((ImTextureID)(intptr_t)gSkinPreviewTex.id, ImVec2(previewWidth, previewHeight), ImVec2(0, 1), ImVec2(1, 0));
 
+    // Zoom with mouse wheel
     if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f)
     {
         gZoom -= io.MouseWheel * 2.0f; // adjust scroll speed here
     }
 
+    // Side panel
     ImGui::SetCursorPos(ImVec2(previewWidth, ImGui::GetFrameHeight()));
     if (ImGui::BeginChild("SkinEditorPanel", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }, 0, ImGuiWindowFlags_NoTitleBar))
     {
