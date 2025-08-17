@@ -77,7 +77,6 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
 
     // Bind and setup FBO
     glBindFramebuffer(GL_FRAMEBUFFER, gSkinPreviewFBO.id);
-
     glBindTexture(GL_TEXTURE_2D, gSkinPreviewTex.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, previewWidth, previewHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -95,10 +94,9 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
     glViewport(0, 0, previewWidth, previewHeight);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glPerspective(45.0f, previewWidth / previewHeight, 0.1f, 100.0f);
+    glPerspective(45.0f, previewWidth / previewHeight, 0.1f, 1000.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
