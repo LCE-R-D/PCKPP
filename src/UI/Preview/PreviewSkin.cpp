@@ -59,8 +59,7 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
     }
 
     ImGuiIO& io = ImGui::GetIO();
-    bool active = ImGui::IsItemActive();
-    if (active)
+    if (ImGui::IsItemActive())
     {
         gRotationY += io.MouseDelta.x * 0.25f;
         gRotationX += io.MouseDelta.y * 0.25f;
