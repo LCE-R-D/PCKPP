@@ -64,26 +64,7 @@ bool slimFormat = false;
 
 void PreviewSkin(PCKAssetFile& file, bool reset)
 {
-    static std::vector<SkinBox> boxes;
-
-    // positions/offsets are work in progress :3
-    SkinBox head(gSkinTexture, -8, -16, -8, 8, 8, 8, 0, 0);
-    SkinBox hat(gSkinTexture, -8, -16, -8, 8, 8, 8, 32, 0, 0, false, 0.5f);
-    SkinBox body(gSkinTexture, -8, -4, -2 + -4, 8, 12, 4, 16, 16);
-    SkinBox arm0(gSkinTexture, -12, -4, body.z, 4, 12, 4, 40, 16);
-    SkinBox arm1(gSkinTexture, 0, -4, body.z, 4, 12, 4, 40, 16, 0, true);
-    SkinBox leg0(gSkinTexture, -8, 8, body.z, 4, 12, 4, 0, 16);
-    SkinBox leg1(gSkinTexture, -4, 8, body.z, 4, 12, 4, 0, 16, 0, true);
-
-    boxes.clear();
-
-    boxes.push_back(head);
-    boxes.push_back(body);
-    boxes.push_back(hat);
-    boxes.push_back(arm0);
-    boxes.push_back(arm1);
-    boxes.push_back(leg0);
-    boxes.push_back(leg1);
+    std::vector<SkinBox> boxes{};
 
     // Load texture from file data
     if (gSkinTexture.id == 0 || reset)
@@ -95,6 +76,69 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
         if (gSkinPreviewTex.id == 0) glGenTextures(1, &gSkinPreviewTex.id);
         if (gSkinPreviewFBO.id == 0) glGenFramebuffers(1, &gSkinPreviewFBO.id);
         if (gSkinPreviewDepth == 0) glGenRenderbuffers(1, &gSkinPreviewDepth);
+
+        bool ANIM_found = false;
+
+        for (const PCKAssetFile::Property& property : file.getProperties())
+        {
+            if (property.first == "ANIM")
+            {
+                std::wstring ws(property.second.begin(), property.second.end()); // convert UTF-16
+                long animValue = std::wcstol(ws.c_str(), nullptr, 0); // parse number
+
+                ANIM = static_cast<uint32_t>(animValue);
+
+                ANIM_found = true;
+                break;
+            }
+        }
+
+        if (!ANIM_found)
+            ANIM = 0;
+
+        slimFormat = ANIM & SLIM_FORMAT;
+        modernFormat = (ANIM & MODERN_WIDE_FORMAT) || slimFormat;
+
+        SkinBox::setTextureSize(64, modernFormat ? 64 : 32);
+        SkinBox::setMirroredBottom(modernFormat);
+    }
+
+    // positions/offsets are work in progress :3
+    SkinBox head(-8, -16, -8, 8, 8, 8, 0, 0);
+    SkinBox hat = SkinBox::CreateLayer(head, 32, 0, 0.5f);
+
+    SkinBox body(-8, -4, -6, 8, 12, 4, 16, 16);
+    SkinBox jacket = SkinBox::CreateLayer(body, 16, 32, 0.5f);
+
+    SkinBox arm0(slimFormat ? -11 : -12, -4, body.z, slimFormat ? 3 : 4, 12, 4, 40, 16);
+    SkinBox sleeve0 = SkinBox::CreateLayer(arm0, 40, 32, 0.5f);
+
+    SkinBox arm1(0, -4, body.z, arm0.width, 12, 4, modernFormat ? 32 : 40, modernFormat ? 48 : 16, 0, !modernFormat);
+    SkinBox sleeve1 = SkinBox::CreateLayer(arm1, 48, 48, 0.5f);
+
+    SkinBox leg0(-8, 8, body.z, 4, 12, 4, 0, 16);
+    SkinBox pant0 = SkinBox::CreateLayer(leg0, 0, 32, 0.5f);
+
+    SkinBox leg1(-4, 8, body.z, 4, 12, 4, modernFormat ? 16 : 0, modernFormat ? 48 : 16, 0, arm1.mirrored);
+    SkinBox pant1 = SkinBox::CreateLayer(leg1, 0, 48, 0.5f);
+
+    boxes.clear();
+
+    if (!(ANIM & HIDE_HAT)) boxes.push_back(hat);
+    if (!(ANIM & HIDE_HEAD)) boxes.push_back(head);
+    if (!(ANIM & HIDE_BODY)) boxes.push_back(body);
+    if (!(ANIM & HIDE_RIGHT_ARM)) boxes.push_back(arm0);
+    if (!(ANIM & HIDE_LEFT_ARM)) boxes.push_back(arm1);
+    if (!(ANIM & HIDE_RIGHT_LEG)) boxes.push_back(leg0);
+    if (!(ANIM & HIDE_LEFT_LEG)) boxes.push_back(leg1);
+
+    if (modernFormat)
+    {
+        if (!(ANIM & HIDE_JACKET)) boxes.push_back(jacket);
+        if (!(ANIM & HIDE_RIGHT_SLEEVE)) boxes.push_back(sleeve0);
+        if (!(ANIM & HIDE_LEFT_SLEEVE)) boxes.push_back(sleeve1);
+        if (!(ANIM & HIDE_RIGHT_PANT)) boxes.push_back(pant0);
+        if (!(ANIM & HIDE_LEFT_PANT)) boxes.push_back(pant1);
     }
 
     ImGuiIO& io = ImGui::GetIO();

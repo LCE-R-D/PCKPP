@@ -7,10 +7,12 @@ struct UVRect
     float u1, v1; // bottom-right UV
 };
 
+int textureWidth, textureHeight;
+bool mirroredBottom;
+
 class SkinBox
 {
 public:
-    int textureWidth, textureHeight;
     float x, y, z;
     float width, height, depth;
     int u, v;
@@ -20,8 +22,8 @@ public:
 
     UVRect front, back, top, bottom, right, left;
 
-    SkinBox(Texture& tex, float x, float y, float z, float width, float height, float depth, float u, float v, int armorMask = 0, bool mirrored = false, float scale = 0.0f)
-        : x(x), y(y), z(z), width(width), height(height), depth(depth), u(u), v(v), armorMask(armorMask), mirrored(mirrored), scale(scale), textureWidth(tex.width), textureHeight(tex.height)
+    SkinBox(float x, float y, float z, float width, float height, float depth, float u, float v, int armorMask = 0, bool mirrored = false, float scale = 0.0f)
+        : x(x), y(y), z(z), width(width), height(height), depth(depth), u(u), v(v), armorMask(armorMask), mirrored(mirrored), scale(scale)
     {
         // Normalize variables
         float u0 = u / textureWidth;
@@ -37,6 +39,12 @@ public:
         front = { top.u0, top.v1, top.u1, left.v1};
         right = { top.u1, top.v1, top.u1 + uvDepthX, left.v1};
         back = { right.u1, top.v1, right.u1 + uvWidth, left.v1};
+    }
+
+    // for simplifying layer box creation
+    static SkinBox CreateLayer(SkinBox& other, int u, int v, float scale)
+    {
+        return SkinBox(other.x, other.y, other.z, other.width, other.height, other.depth, u, v, 0, false, scale);
     }
 
     void Draw() const
@@ -71,10 +79,10 @@ public:
         glTexCoord2f(top.u1, top.v1); glVertex3f(x1, y1, z1);
         glTexCoord2f(top.u1, top.v0); glVertex3f(x1, y1, z0);
 
-        glTexCoord2f(bottom.u1, bottom.v1); glVertex3f(x0, y0, z0);
-        glTexCoord2f(bottom.u0, bottom.v1); glVertex3f(x1, y0, z0);
-        glTexCoord2f(bottom.u0, bottom.v0); glVertex3f(x1, y0, z1);
-        glTexCoord2f(bottom.u1, bottom.v0); glVertex3f(x0, y0, z1);
+        glTexCoord2f(bottom.u0, mirroredBottom ? bottom.v0 : bottom.v1); glVertex3f(x0, y0, z0);
+        glTexCoord2f(bottom.u1, mirroredBottom ? bottom.v0 : bottom.v1); glVertex3f(x1, y0, z0);
+        glTexCoord2f(bottom.u1, mirroredBottom ? bottom.v1 : bottom.v0); glVertex3f(x1, y0, z1);
+        glTexCoord2f(bottom.u0, mirroredBottom ? bottom.v1 : bottom.v0); glVertex3f(x0, y0, z1);
 
         glTexCoord2f(right.u1, right.v1); glVertex3f(x1, y0, z0);
         glTexCoord2f(right.u1, right.v0); glVertex3f(x1, y1, z0);
@@ -90,5 +98,16 @@ public:
 
         glDisable(GL_TEXTURE_2D);
         glDisable(GL_BLEND);
+    }
+
+    static void setMirroredBottom(bool value)
+    {
+        mirroredBottom = value;
+    }
+
+    static void setTextureSize(int width, int height)
+    {
+        textureWidth = width;
+        textureHeight = height;
     }
 };
