@@ -11,17 +11,56 @@ static Texture gSkinTexture{}, gSkinPreviewTex{}, gSkinPreviewFBO{};
 static GLuint gSkinPreviewDepth = 0;
 float gRotationX = 0.0f;
 float gRotationY = 0.0f;
-
 float gPanX = 0.0f;
 float gPanY = 0.0f;
 float gZoom = 35.0f;
 
+enum SKIN_ANIM
+{
+    STATIONARY_ARMS = 1 << 0,
+    ZOMBIE_ARMS = 1 << 1,
+    STATIONARY_LEGS = 1 << 2,
+    BAD_SANTA_IDLE = 1 << 3,
+    UNKNOWN_EFFECT = 1 << 4,
+    SYNCHRONIZED_LEGS = 1 << 5,
+    SYNCHRONIZED_ARMS = 1 << 6,
+    STATUE_OF_LIBERTY = 1 << 7,
+    HIDE_ARMOR = 1 << 8,
+    FIRST_PERSON_BOBBING_DISABLED = 1 << 9,
+    HIDE_HEAD = 1 << 10,
+    HIDE_RIGHT_ARM = 1 << 11,
+    HIDE_LEFT_ARM = 1 << 12,
+    HIDE_BODY = 1 << 13,
+    HIDE_RIGHT_LEG = 1 << 14,
+    HIDE_LEFT_LEG = 1 << 15,
+    HIDE_HAT = 1 << 16,
+    BACKWARDS_CROUCH = 1 << 17, // This is what it's called on bedrock lol
+    MODERN_WIDE_FORMAT = 1 << 18,
+    SLIM_FORMAT = 1 << 19,
+    HIDE_LEFT_SLEEVE = 1 << 20,
+    HIDE_RIGHT_SLEEVE = 1 << 21,
+    HIDE_LEFT_PANT = 1 << 22,
+    HIDE_RIGHT_PANT = 1 << 23,
+    HIDE_JACKET = 1 << 24,
+    ALLOW_HEAD_ARMOR = 1 << 25, // these flags handle allowing a piece of armor to render after its parent part was hidden
+    ALLOW_RIGHT_ARM_ARMOR = 1 << 26,
+    ALLOW_LEFT_ARM_ARMOR = 1 << 27,
+    ALLOW_CHESTPLATE = 1 << 28,
+    ALLOW_RIGHT_LEGGING = 1 << 29,
+    ALLOW_LEFT_LEGGING = 1 << 30,
+    DINNERBONE_RENDERING = 1u << 31
+};
+
 void glPerspective(float fovY, float aspect, float zNear, float zFar)
 {
-	float fH = tanf(fovY * 0.5f * (M_PI / 180.0f)) * zNear;
-	float fW = fH * aspect;
-	glFrustum(-fW, fW, -fH, fH, zNear, zFar);
+    float fH = tanf(fovY * 0.5f * (M_PI / 180.0f)) * zNear;
+    float fW = fH * aspect;
+    glFrustum(-fW, fW, -fH, fH, zNear, zFar);
 }
+
+uint32_t ANIM = 0;
+bool modernFormat = false;
+bool slimFormat = false;
 
 void PreviewSkin(PCKAssetFile& file, bool reset)
 {
@@ -130,19 +169,18 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
 
     // Side panel
     ImGui::SetCursorPos(ImVec2(previewWidth, ImGui::GetFrameHeight()));
-    if (ImGui::BeginChild("SkinEditorPanel", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }, 0, ImGuiWindowFlags_NoTitleBar))
+    if (ImGui::BeginChild("SkinEditorPanel", ImGui::GetContentRegionAvail(), 0, ImGuiWindowFlags_NoTitleBar))
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-        float availableSpaceX = ImGui::GetContentRegionAvail().x;
-        float availableSpaceY = ImGui::GetContentRegionAvail().y;
+        float availableX = ImGui::GetContentRegionAvail().x;
+        float availableY = ImGui::GetContentRegionAvail().y;
 
         ImVec2 windowPos = ImGui::GetWindowPos();
-        ImVec2 windowBounds = ImVec2(windowPos.x + availableSpaceX, windowPos.y + availableSpaceY);
+        ImVec2 windowBounds = ImVec2(windowPos.x + availableX, windowPos.y + availableY);
 
         draw_list->AddRectFilled(windowPos, windowBounds, IM_COL32(60, 60, 60, 255)); // dark gray
 
-        ImGui::Image((ImTextureID)(intptr_t)gSkinTexture.id, { availableSpaceX, availableSpaceX });
+        ImGui::Image((ImTextureID)(intptr_t)gSkinTexture.id, { availableX, modernFormat ? availableX : availableX / 2});
 
         ImGui::EndChild();
     }
