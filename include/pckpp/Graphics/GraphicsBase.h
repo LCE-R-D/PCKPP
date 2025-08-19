@@ -5,9 +5,9 @@
 
 struct Texture
 {
-    unsigned int id;
-    int width;
-    int height;
+    unsigned int id{0};
+    int width{0};
+    int height{0};
 };
 
 enum class TextureFilter

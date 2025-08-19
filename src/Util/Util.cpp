@@ -34,3 +34,8 @@ void IO::WriteFile(const std::string& path, const std::vector<unsigned char>& fi
 bool String::startsWith(const std::string& str, const std::string& prefix) {
     return str.size() >= prefix.size() && str.compare(0, prefix.size(), prefix) == 0;
 }
+
+std::wstring String::toWstring(const std::u16string& u16) {
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
+    return std::wstring(conv.to_bytes(u16).begin(), conv.to_bytes(u16).end());
+}

@@ -5,6 +5,7 @@
 #include <pckpp/Util.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <sstream>
 
 // Globals
 static Texture gSkinTexture{}, gSkinPreviewTex{}, gSkinPreviewFBO{};
@@ -61,53 +62,57 @@ void glPerspective(float fovY, float aspect, float zNear, float zFar)
 uint32_t ANIM = 0;
 bool modernFormat = false;
 bool slimFormat = false;
+std::vector<SkinBox> boxes{};
+std::vector<SkinBox> defaultBoxes{};
 
-void PreviewSkin(PCKAssetFile& file, bool reset)
+void SetUpSkinPreview(PCKAssetFile& file)
 {
-    std::vector<SkinBox> boxes{};
+    GraphicsOpenGL* graphics = gApp->GetGraphics();
+    graphics->DeleteTexture(gSkinTexture);
+    gSkinTexture = graphics->LoadTextureFromMemory(file.getData().data(), file.getFileSize());
 
-    // Load texture from file data
-    if (gSkinTexture.id == 0 || reset)
+    if (gSkinPreviewTex.id == 0) glGenTextures(1, &gSkinPreviewTex.id);
+    if (gSkinPreviewFBO.id == 0) glGenFramebuffers(1, &gSkinPreviewFBO.id);
+    if (gSkinPreviewDepth == 0) glGenRenderbuffers(1, &gSkinPreviewDepth);
+
+    bool ANIM_found = false;
+
+    boxes.clear();
+    defaultBoxes.clear();
+
+    for (const PCKAssetFile::Property& property : file.getProperties())
     {
-        GraphicsOpenGL* graphics = gApp->GetGraphics();
-        graphics->DeleteTexture(gSkinTexture);
-        gSkinTexture = graphics->LoadTextureFromMemory(file.getData().data(), file.getFileSize());
+        std::wstring value(property.second.begin(), property.second.end()); // convert UTF-16
 
-        if (gSkinPreviewTex.id == 0) glGenTextures(1, &gSkinPreviewTex.id);
-        if (gSkinPreviewFBO.id == 0) glGenFramebuffers(1, &gSkinPreviewFBO.id);
-        if (gSkinPreviewDepth == 0) glGenRenderbuffers(1, &gSkinPreviewDepth);
-
-        bool ANIM_found = false;
-
-        for (const PCKAssetFile::Property& property : file.getProperties())
+        if (property.first == "ANIM")
         {
-            if (property.first == "ANIM")
-            {
-                std::wstring ws(property.second.begin(), property.second.end()); // convert UTF-16
-                long animValue = std::wcstol(ws.c_str(), nullptr, 0); // parse number
+            long animValue = std::wcstol(value.c_str(), nullptr, 0); // parse number
 
-                ANIM = static_cast<uint32_t>(animValue);
+            ANIM = static_cast<uint32_t>(animValue);
 
-                ANIM_found = true;
-                break;
-            }
+            ANIM_found = true;
         }
-
-        if (!ANIM_found)
-            ANIM = 0;
-
-        slimFormat = ANIM & SLIM_FORMAT;
-        modernFormat = (ANIM & MODERN_WIDE_FORMAT) || slimFormat;
-
-        SkinBox::setTextureSize(64, modernFormat ? 64 : 32);
-        SkinBox::setMirroredBottom(modernFormat);
+        else if (property.first == "BOX")
+        {
+            SkinBox box{};
+            box.parse(value);
+            boxes.push_back(box);
+        }
     }
+
+    std::cout << boxes.size() << std::endl;
+
+    if (!ANIM_found)
+        ANIM = 0;
+
+    slimFormat = ANIM & SLIM_FORMAT;
+    modernFormat = (ANIM & MODERN_WIDE_FORMAT) || slimFormat;
 
     // positions/offsets are work in progress :3
     SkinBox head(-8, -16, -8, 8, 8, 8, 0, 0);
     SkinBox hat = SkinBox::CreateLayer(head, 32, 0, 0.5f);
 
-    SkinBox body(-8, -4, -6, 8, 12, 4, 16, 16);
+    SkinBox body(- 8, -4, -6, 8, 12, 4, 16, 16);
     SkinBox jacket = SkinBox::CreateLayer(body, 16, 32, 0.5f);
 
     SkinBox arm0(slimFormat ? -11 : -12, -4, body.z, slimFormat ? 3 : 4, 12, 4, 40, 16);
@@ -122,23 +127,33 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
     SkinBox leg1(-4, 8, body.z, 4, 12, 4, modernFormat ? 16 : 0, modernFormat ? 48 : 16, 0, arm1.mirrored);
     SkinBox pant1 = SkinBox::CreateLayer(leg1, 0, 48, 0.5f);
 
-    boxes.clear();
-
-    if (!(ANIM & HIDE_HAT)) boxes.push_back(hat);
-    if (!(ANIM & HIDE_HEAD)) boxes.push_back(head);
-    if (!(ANIM & HIDE_BODY)) boxes.push_back(body);
-    if (!(ANIM & HIDE_RIGHT_ARM)) boxes.push_back(arm0);
-    if (!(ANIM & HIDE_LEFT_ARM)) boxes.push_back(arm1);
-    if (!(ANIM & HIDE_RIGHT_LEG)) boxes.push_back(leg0);
-    if (!(ANIM & HIDE_LEFT_LEG)) boxes.push_back(leg1);
+    if (!(ANIM & HIDE_HAT)) defaultBoxes.push_back(hat);
+    if (!(ANIM & HIDE_HEAD)) defaultBoxes.push_back(head);
+    if (!(ANIM & HIDE_BODY)) defaultBoxes.push_back(body);
+    if (!(ANIM & HIDE_RIGHT_ARM)) defaultBoxes.push_back(arm0);
+    if (!(ANIM & HIDE_LEFT_ARM)) defaultBoxes.push_back(arm1);
+    if (!(ANIM & HIDE_RIGHT_LEG)) defaultBoxes.push_back(leg0);
+    if (!(ANIM & HIDE_LEFT_LEG)) defaultBoxes.push_back(leg1);
 
     if (modernFormat)
     {
-        if (!(ANIM & HIDE_JACKET)) boxes.push_back(jacket);
-        if (!(ANIM & HIDE_RIGHT_SLEEVE)) boxes.push_back(sleeve0);
-        if (!(ANIM & HIDE_LEFT_SLEEVE)) boxes.push_back(sleeve1);
-        if (!(ANIM & HIDE_RIGHT_PANT)) boxes.push_back(pant0);
-        if (!(ANIM & HIDE_LEFT_PANT)) boxes.push_back(pant1);
+        if (!(ANIM & HIDE_JACKET)) defaultBoxes.push_back(jacket);
+        if (!(ANIM & HIDE_RIGHT_SLEEVE)) defaultBoxes.push_back(sleeve0);
+        if (!(ANIM & HIDE_LEFT_SLEEVE)) defaultBoxes.push_back(sleeve1);
+        if (!(ANIM & HIDE_RIGHT_PANT)) defaultBoxes.push_back(pant0);
+        if (!(ANIM & HIDE_LEFT_PANT)) defaultBoxes.push_back(pant1);
+    }
+
+    SkinBox::setTextureSize(64, modernFormat ? 64 : 32);
+    SkinBox::setMirroredBottom(modernFormat);
+}
+
+void PreviewSkin(PCKAssetFile& file, bool reset)
+{
+    // Load texture from file data
+    if (gSkinTexture.id == 0 || reset)
+    {
+        SetUpSkinPreview(file);
     }
 
     ImGuiIO& io = ImGui::GetIO();
@@ -194,9 +209,14 @@ void PreviewSkin(PCKAssetFile& file, bool reset)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
     // Draw boxes
-    for (const SkinBox& box : boxes)
+    for (const SkinBox& box : defaultBoxes)
     {
         box.Draw();
+    }
+
+    for (const SkinBox& box : boxes)
+    {
+        //box.Draw();
     }
 
     glDisable(GL_DEPTH_TEST);

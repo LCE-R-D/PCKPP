@@ -1,6 +1,9 @@
 #pragma once
 
 #include <pckpp/PCK/PCKAssetFile.h>
+#include <codecvt>
+#include <locale>
+#include <sstream>
 
 namespace IO
 {
@@ -14,4 +17,6 @@ namespace IO
 namespace String
 {
 	bool startsWith(const std::string& str, const std::string& prefix);
+
+	std::wstring toWstring(const std::u16string& u16);
 }

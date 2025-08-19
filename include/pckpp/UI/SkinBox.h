@@ -1,5 +1,6 @@
 #pragma once
 #include <pckpp/Graphics/GraphicsOpenGL.h>
+#include <pckpp/Util.h>
 
 struct UVRect
 {
@@ -12,33 +13,45 @@ bool mirroredBottom;
 
 class SkinBox
 {
+private:
 public:
+    std::string type{};
     float x, y, z;
     float width, height, depth;
-    int u, v;
+    float u, v;
     int armorMask;
     bool mirrored;
-    float scale{0.0f};
+    float scale{ 0.0f };
 
-    UVRect front, back, top, bottom, right, left;
+    SkinBox() : SkinBox(0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0) {}
 
     SkinBox(float x, float y, float z, float width, float height, float depth, float u, float v, int armorMask = 0, bool mirrored = false, float scale = 0.0f)
-        : x(x), y(y), z(z), width(width), height(height), depth(depth), u(u), v(v), armorMask(armorMask), mirrored(mirrored), scale(scale)
+        : type(type), x(x), y(y), z(z), width(width), height(height), depth(depth), u(u), v(v), armorMask(armorMask), mirrored(mirrored), scale(scale)
     {
-        // Normalize variables
-        float u0 = u / textureWidth;
-        float v0 = v / textureHeight;
-        float uvWidth = width / textureWidth;
-        float uvHeight = height / textureHeight;
-        float uvDepthX = depth / textureWidth;
-        float uvDepthY = depth / textureHeight;
+        calculateUVs();
+    }
 
-        top = { u0 + uvDepthX, v0, u0 + uvWidth + uvDepthX, v0 + uvDepthY };
-        bottom = { top.u1, top.v0, top.u1 + uvWidth, top.v1 };
-        left = { u0, top.v1, top.u0, v0 + uvDepthY + uvHeight};
-        front = { top.u0, top.v1, top.u1, left.v1};
-        right = { top.u1, top.v1, top.u1 + uvDepthX, left.v1};
-        back = { right.u1, top.v1, right.u1 + uvWidth, left.v1};
+    void parse(const std::wstring& value) {
+        std::wstringstream boxValue(value);
+
+        std::wstring typeWide;
+
+        boxValue >> typeWide
+            >> x >> y >> z
+            >> width >> height >> depth
+            >> u >> v >> armorMask >> mirrored >> scale;
+
+        type = Binary::ToUTF8({ typeWide.begin(), typeWide.end() });
+
+        wprintf(L"%s\n", value.c_str());
+        printf("\t%f %f %f %f %f %f %f %f %d %d %f\n",
+            x, y, z,
+            width, height, depth,
+            u, v,
+            armorMask, mirrored,
+            scale);
+
+        calculateUVs();
     }
 
     // for simplifying layer box creation
@@ -55,44 +68,48 @@ public:
 
         glBegin(GL_QUADS);
 
-        float x0 = x - scale;
-        float x1 = x + width + scale;
-        float y0 = -y - scale;
-        float y1 = -y + height + scale;
-        float z0 = z - scale;
-        float z1 = z + depth + scale;
+        float offsetX{};
+        float offsetY{};
+        float offsetZ{};
+
+        float x0 = offsetX + x - scale;
+        float x1 = offsetX + x + width + scale;
+        float y0 = -offsetY + -y - scale;
+        float y1 = -offsetY + -y + height + scale;
+        float z0 = offsetZ + z - scale;
+        float z1 = offsetZ + z + depth + scale;
 
         if (mirrored) std::swap(x0, x1);
 
-        glTexCoord2f(front.u0, front.v1); glVertex3f(x0, y0, z1);
-        glTexCoord2f(front.u1, front.v1); glVertex3f(x1, y0, z1);
-        glTexCoord2f(front.u1, front.v0); glVertex3f(x1, y1, z1);
-        glTexCoord2f(front.u0, front.v0); glVertex3f(x0, y1, z1);
+        glTexCoord2f(mFront.u0, mFront.v1); glVertex3f(x0, y0, z1);
+        glTexCoord2f(mFront.u1, mFront.v1); glVertex3f(x1, y0, z1);
+        glTexCoord2f(mFront.u1, mFront.v0); glVertex3f(x1, y1, z1);
+        glTexCoord2f(mFront.u0, mFront.v0); glVertex3f(x0, y1, z1);
 
-        glTexCoord2f(back.u1, back.v1); glVertex3f(x0, y0, z0);
-        glTexCoord2f(back.u1, back.v0); glVertex3f(x0, y1, z0);
-        glTexCoord2f(back.u0, back.v0); glVertex3f(x1, y1, z0);
-        glTexCoord2f(back.u0, back.v1); glVertex3f(x1, y0, z0);
+        glTexCoord2f(mBack.u1, mBack.v1); glVertex3f(x0, y0, z0);
+        glTexCoord2f(mBack.u1, mBack.v0); glVertex3f(x0, y1, z0);
+        glTexCoord2f(mBack.u0, mBack.v0); glVertex3f(x1, y1, z0);
+        glTexCoord2f(mBack.u0, mBack.v1); glVertex3f(x1, y0, z0);
 
-        glTexCoord2f(top.u0, top.v0); glVertex3f(x0, y1, z0);
-        glTexCoord2f(top.u0, top.v1); glVertex3f(x0, y1, z1);
-        glTexCoord2f(top.u1, top.v1); glVertex3f(x1, y1, z1);
-        glTexCoord2f(top.u1, top.v0); glVertex3f(x1, y1, z0);
+        glTexCoord2f(mTop.u0, mTop.v0); glVertex3f(x0, y1, z0);
+        glTexCoord2f(mTop.u0, mTop.v1); glVertex3f(x0, y1, z1);
+        glTexCoord2f(mTop.u1, mTop.v1); glVertex3f(x1, y1, z1);
+        glTexCoord2f(mTop.u1, mTop.v0); glVertex3f(x1, y1, z0);
 
-        glTexCoord2f(bottom.u0, mirroredBottom ? bottom.v0 : bottom.v1); glVertex3f(x0, y0, z0);
-        glTexCoord2f(bottom.u1, mirroredBottom ? bottom.v0 : bottom.v1); glVertex3f(x1, y0, z0);
-        glTexCoord2f(bottom.u1, mirroredBottom ? bottom.v1 : bottom.v0); glVertex3f(x1, y0, z1);
-        glTexCoord2f(bottom.u0, mirroredBottom ? bottom.v1 : bottom.v0); glVertex3f(x0, y0, z1);
+        glTexCoord2f(mBottom.u0, mirroredBottom ? mBottom.v0 : mBottom.v1); glVertex3f(x0, y0, z0);
+        glTexCoord2f(mBottom.u1, mirroredBottom ? mBottom.v0 : mBottom.v1); glVertex3f(x1, y0, z0);
+        glTexCoord2f(mBottom.u1, mirroredBottom ? mBottom.v1 : mBottom.v0); glVertex3f(x1, y0, z1);
+        glTexCoord2f(mBottom.u0, mirroredBottom ? mBottom.v1 : mBottom.v0); glVertex3f(x0, y0, z1);
 
-        glTexCoord2f(right.u1, right.v1); glVertex3f(x1, y0, z0);
-        glTexCoord2f(right.u1, right.v0); glVertex3f(x1, y1, z0);
-        glTexCoord2f(right.u0, right.v0); glVertex3f(x1, y1, z1);
-        glTexCoord2f(right.u0, right.v1); glVertex3f(x1, y0, z1);
+        glTexCoord2f(mRight.u1, mRight.v1); glVertex3f(x1, y0, z0);
+        glTexCoord2f(mRight.u1, mRight.v0); glVertex3f(x1, y1, z0);
+        glTexCoord2f(mRight.u0, mRight.v0); glVertex3f(x1, y1, z1);
+        glTexCoord2f(mRight.u0, mRight.v1); glVertex3f(x1, y0, z1);
 
-        glTexCoord2f(left.u0, left.v1); glVertex3f(x0, y0, z0);
-        glTexCoord2f(left.u1, left.v1); glVertex3f(x0, y0, z1);
-        glTexCoord2f(left.u1, left.v0); glVertex3f(x0, y1, z1);
-        glTexCoord2f(left.u0, left.v0); glVertex3f(x0, y1, z0);
+        glTexCoord2f(mLeft.u0, mLeft.v1); glVertex3f(x0, y0, z0);
+        glTexCoord2f(mLeft.u1, mLeft.v1); glVertex3f(x0, y0, z1);
+        glTexCoord2f(mLeft.u1, mLeft.v0); glVertex3f(x0, y1, z1);
+        glTexCoord2f(mLeft.u0, mLeft.v0); glVertex3f(x0, y1, z0);
 
         glEnd();
 
@@ -109,5 +126,25 @@ public:
     {
         textureWidth = width;
         textureHeight = height;
+    }
+
+    UVRect mFront, mBack, mTop, mBottom, mRight, mLeft;
+
+    void calculateUVs()
+    {
+        // Normalize variables
+        float u0 = u / textureWidth;
+        float v0 = v / textureHeight;
+        float uvWidth = width / textureWidth;
+        float uvHeight = height / textureHeight;
+        float uvDepthX = depth / textureWidth;
+        float uvDepthY = depth / textureHeight;
+
+        mTop = { u0 + uvDepthX, v0, u0 + uvWidth + uvDepthX, v0 + uvDepthY };
+        mBottom = { mTop.u1, mTop.v0, mTop.u1 + uvWidth, mTop.v1 };
+        mLeft = { u0, mTop.v1, mTop.u0, v0 + uvDepthY + uvHeight };
+        mFront = { mTop.u0, mTop.v1, mTop.u1, mLeft.v1 };
+        mRight = { mTop.u1, mTop.v1, mTop.u1 + uvDepthX, mLeft.v1 };
+        mBack = { mRight.u1, mTop.v1, mRight.u1 + uvWidth, mLeft.v1 };
     }
 };
