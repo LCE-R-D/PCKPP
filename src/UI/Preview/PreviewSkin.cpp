@@ -109,22 +109,24 @@ void SetUpSkinPreview(PCKAssetFile& file)
     modernFormat = (ANIM & MODERN_WIDE_FORMAT) || slimFormat;
 
     // positions/offsets are work in progress :3
-    SkinBox head(-8, -16, -8, 8, 8, 8, 0, 0);
+    // heads seem to have weird offsets??? will work on this at a later date
+    SkinBox head("HEAD_DEFAULT", - 4, -8, -4, 8, 8, 8, 0, 0);
     SkinBox hat = SkinBox::CreateLayer(head, 32, 0, 0.5f);
 
-    SkinBox body(- 8, -4, -6, 8, 12, 4, 16, 16);
+    SkinBox body("BODY", - 4, -2, -2, 8, 12, 4, 16, 16);
     SkinBox jacket = SkinBox::CreateLayer(body, 16, 32, 0.5f);
+    SkinBox cape("CAPE", -8, -4, -6, 10, 16, 1, 16, 16);
 
-    SkinBox arm0(slimFormat ? -11 : -12, -4, body.z, slimFormat ? 3 : 4, 12, 4, 40, 16);
+    SkinBox arm0("ARM0", slimFormat ? -2 : -3, -2, -2, slimFormat ? 3 : 4, 12, 4, 40, 16);
     SkinBox sleeve0 = SkinBox::CreateLayer(arm0, 40, 32, 0.5f);
 
-    SkinBox arm1(0, -4, body.z, arm0.width, 12, 4, modernFormat ? 32 : 40, modernFormat ? 48 : 16, 0, !modernFormat);
+    SkinBox arm1("ARM1", -1, -2, -2, arm0.width, 12, 4, modernFormat ? 32 : 40, modernFormat ? 48 : 16, 0, !modernFormat);
     SkinBox sleeve1 = SkinBox::CreateLayer(arm1, 48, 48, 0.5f);
 
-    SkinBox leg0(-8, 8, body.z, 4, 12, 4, 0, 16);
+    SkinBox leg0("LEG0", -2, 0, -2, 4, 12, 4, 0, 16);
     SkinBox pant0 = SkinBox::CreateLayer(leg0, 0, 32, 0.5f);
 
-    SkinBox leg1(-4, 8, body.z, 4, 12, 4, modernFormat ? 16 : 0, modernFormat ? 48 : 16, 0, arm1.mirrored);
+    SkinBox leg1("LEG1", -2, 0, -2, 4, 12, 4, modernFormat ? 16 : 0, modernFormat ? 48 : 16, 0, arm1.mirrored);
     SkinBox pant1 = SkinBox::CreateLayer(leg1, 0, 48, 0.5f);
 
     if (!(ANIM & HIDE_HAT)) defaultBoxes.push_back(hat);

@@ -13,7 +13,6 @@ bool mirroredBottom;
 
 class SkinBox
 {
-private:
 public:
     std::string type{};
     float x, y, z;
@@ -23,9 +22,9 @@ public:
     bool mirrored;
     float scale{ 0.0f };
 
-    SkinBox() : SkinBox(0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0) {}
+    SkinBox() : SkinBox("BODY", 0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0) {}
 
-    SkinBox(float x, float y, float z, float width, float height, float depth, float u, float v, int armorMask = 0, bool mirrored = false, float scale = 0.0f)
+    SkinBox(const std::string& type, float x, float y, float z, float width, float height, float depth, float u, float v, int armorMask = 0, bool mirrored = false, float scale = 0.0f)
         : type(type), x(x), y(y), z(z), width(width), height(height), depth(depth), u(u), v(v), armorMask(armorMask), mirrored(mirrored), scale(scale)
     {
         calculateUVs();
@@ -43,21 +42,13 @@ public:
 
         type = Binary::ToUTF8({ typeWide.begin(), typeWide.end() });
 
-        wprintf(L"%s\n", value.c_str());
-        printf("\t%f %f %f %f %f %f %f %f %d %d %f\n",
-            x, y, z,
-            width, height, depth,
-            u, v,
-            armorMask, mirrored,
-            scale);
-
         calculateUVs();
     }
 
     // for simplifying layer box creation
     static SkinBox CreateLayer(SkinBox& other, int u, int v, float scale)
     {
-        return SkinBox(other.x, other.y, other.z, other.width, other.height, other.depth, u, v, 0, false, scale);
+        return SkinBox(other.type, other.x, other.y, other.z, other.width, other.height, other.depth, u, v, 0, false, scale);
     }
 
     void Draw() const
@@ -72,10 +63,43 @@ public:
         float offsetY{};
         float offsetZ{};
 
+        if (type == "HEAD_DEFAULT")
+        {
+            offsetY = -4;
+        }
+        if (type == "HEAD")
+        {
+            offsetY = -8;
+        }
+        if (type == "BODY")
+        {
+            offsetY = 2;
+        }
+        if (type == "ARM0")
+        {
+            offsetX = -5;
+            offsetY = 2;
+        }
+        if (type == "ARM1")
+        {
+            offsetX = 5;
+            offsetY = 2;
+        }
+        if (type == "LEG0")
+        {
+            offsetX = -1.9;
+            offsetY = 12;
+        }
+        if (type == "LEG1")
+        {
+            offsetX = 1.9;
+            offsetY = 12;
+        }
+
         float x0 = offsetX + x - scale;
         float x1 = offsetX + x + width + scale;
-        float y0 = -offsetY + -y - scale;
-        float y1 = -offsetY + -y + height + scale;
+        float y0 = -(offsetY + y) - scale;
+        float y1 = -(offsetY + y) + height + scale;
         float z0 = offsetZ + z - scale;
         float z1 = offsetZ + z + depth + scale;
 
@@ -128,6 +152,7 @@ public:
         textureHeight = height;
     }
 
+private:
     UVRect mFront, mBack, mTop, mBottom, mRight, mLeft;
 
     void calculateUVs()
