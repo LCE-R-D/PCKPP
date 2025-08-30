@@ -1,8 +1,8 @@
-#include <pckpp/UI/MenuFunctions.h>
-#include <pckpp/UI/SkinBox.h>
-#include <pckpp/UI/Tree/TreeFunctions.h>
-#include <pckpp/UI/UIImGui.h>
-#include <pckpp/Util.h>
+#include "UI/MenuFunctions.h"
+#include "UI/SkinBox.h"
+#include "UI/Tree/TreeFunctions.h"
+#include "UI/UIImGui.h"
+#include "Util/Util.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <sstream>

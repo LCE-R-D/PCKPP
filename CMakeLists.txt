@@ -10,11 +10,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 enable_language(CXX)
 
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
+set(INCLUDE_DIR src)
 set(SRC ${SOURCE_FILES})
-
-include_directories(PCKPP PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}/include/
-)
 
 # TODO: Add icons for other platforms
 
@@ -33,6 +30,7 @@ endif()
 find_package(OpenGL REQUIRED)
 
 add_executable(PCKPP ${SRC} ${RESOURCE_FILES})
+target_include_directories(PCKPP PRIVATE ${INCLUDE_DIR})
 
 add_subdirectory(vendor/glad)
 target_link_libraries(PCKPP PRIVATE glad)

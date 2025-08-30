@@ -1,9 +1,9 @@
 ﻿#include <map>
 #include <sstream>
-#include <pckpp/Application.h>
-#include <pckpp/PCK/PCKAssetFile.h>
-#include <pckpp/Program/Program.h>
-#include <pckpp/UI/Tree/TreeFunctions.h>
+#include "Application/Application.h"
+#include "PCK/PCKAssetFile.h"
+#include "Program/Program.h"
+#include "UI/Tree/TreeFunctions.h"
 
 void ProgramSetup() {
 	gApp->SetFolderIcon(gApp->GetGraphics()->LoadTextureFromFile("assets/icons/NODE_FOLDER.png", TextureFilter::LINEAR_MIPMAP_LINEAR));

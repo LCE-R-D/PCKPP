@@ -1,11 +1,11 @@
 #include <sstream>
 #include <cstring>
-#include <pckpp/UI/Preview.h>
-#include <pckpp/Program/ProgramInstance.h>
-#include <pckpp/UI/UIImGui.h>
-#include <pckpp/UI/MenuFunctions.h>
-#include <pckpp/UI/Tree/TreeFunctions.h>
-#include <pckpp/Util.h>
+#include "UI/Preview.h"
+#include "Program/ProgramInstance.h"
+#include "UI/UIImGui.h"
+#include "UI/MenuFunctions.h"
+#include "UI/Tree/TreeFunctions.h"
+#include "Util/Util.h"
 
 // Preview globals
 std::string gPreviewTitle = "Preview";

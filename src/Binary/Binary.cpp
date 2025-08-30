@@ -1,6 +1,6 @@
 #include <locale>
 #include <codecvt>
-#include <pckpp/Binary/Binary.h>
+#include "Binary/Binary.h"
 
 uint16_t Binary::SwapInt16(uint16_t value)
 {

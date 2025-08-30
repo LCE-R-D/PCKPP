@@ -2,10 +2,10 @@
 
 #include <iostream>
 #include <map>
-#include <pckpp/Graphics/GraphicsBase.h>
-#include <pckpp/Platform/PlatformBase.h>
-#include <pckpp/Program/ProgramInstance.h>
-#include <pckpp/UI/UIBase.h>
+#include "Graphics/GraphicsBase.h"
+#include "Platform/PlatformBase.h"
+#include "Program/ProgramInstance.h"
+#include "UI/UIBase.h"
 
 template<typename TPlatform, typename TGraphics, typename TUI>
 class Application {
@@ -76,9 +76,9 @@ private:
 };
 
 // Setup your custom application stuff below :3
-#include <pckpp/Platform/PlatformSDL.h>
-#include <pckpp/Graphics/GraphicsOpenGL.h>
-#include <pckpp/UI/UIImGui.h>
+#include "Platform/PlatformSDL.h"
+#include "Graphics/GraphicsOpenGL.h"
+#include "UI/UIImGui.h"
 
 using DefaultGraphics = GraphicsOpenGL;
 using DefaultUI = UIImGui;

@@ -1,6 +1,6 @@
 #pragma once
-#include <pckpp/Graphics/GraphicsOpenGL.h>
-#include <pckpp/Util.h>
+#include "Graphics/GraphicsOpenGL.h"
+#include "Util/Util.h"
 
 struct UVRect
 {

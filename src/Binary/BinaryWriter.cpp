@@ -1,4 +1,4 @@
-#include <pckpp/Binary/BinaryWriter.h>
+#include "Binary/BinaryWriter.h"
 
 BinaryWriter::BinaryWriter(const std::string& filepath)
 	: mStream(filepath, std::ios::binary)

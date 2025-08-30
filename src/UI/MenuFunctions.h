@@ -1,8 +1,8 @@
 #pragma once
 
-#include <pckpp/Binary/Binary.h>
-#include <pckpp/PCK/PCKAssetFile.h>
-#include <pckpp/Platform/PlatformBase.h>
+#include "Binary/Binary.h"
+#include "PCK/PCKAssetFile.h"
+#include "Platform/PlatformBase.h"
 
 // Opens PCK File from path
 void OpenPCKFile(const std::string& inpath);

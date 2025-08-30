@@ -1,8 +1,8 @@
 #pragma once
 
 #include <filesystem>
-#include <pckpp/Binary/Binary.h>
-#include <pckpp/PCK/PCKAssetFile.h>
+#include "Binary/Binary.h"
+#include "PCK/PCKAssetFile.h"
 
 // PCK File research done by Jam1Garner, Nobledez, NessieHax/Miku666/nullptr, myself (May/MattNL), and many others over the years.
 

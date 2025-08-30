@@ -1,7 +1,7 @@
 #pragma once
 
-#include <pckpp/PCK/PCKAssetFile.h>
-#include <pckpp/UI/Tree/TreeNode.h>
+#include "PCK/PCKAssetFile.h"
+#include "UI/Tree/TreeNode.h"
 
 class UIBase {
 public:

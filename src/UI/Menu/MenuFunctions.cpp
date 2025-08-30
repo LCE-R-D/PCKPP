@@ -1,8 +1,8 @@
 #include <sstream>
-#include <pckpp/Application.h>
-#include <pckpp/Program/Program.h>
-#include <pckpp/UI/MenuFunctions.h>
-#include <pckpp/Util.h>
+#include "Application/Application.h"
+#include "Program/Program.h"
+#include "UI/MenuFunctions.h"
+#include "Util/Util.h"
 
 static PlatformBase::FileDialogBase::FileFilter pckFilter[] = {
 	{ "Minecraft LCE DLC Files (*.pck)", "pck" }

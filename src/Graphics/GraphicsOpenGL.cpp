@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <pckpp/Graphics/GraphicsOpenGL.h>
+#include "Graphics/GraphicsOpenGL.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>

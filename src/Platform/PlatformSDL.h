@@ -1,7 +1,7 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-#include <pckpp/Platform/PlatformBase.h>
+#include "Platform/PlatformBase.h"
 
 class PlatformSDL : public PlatformBase {
 public:

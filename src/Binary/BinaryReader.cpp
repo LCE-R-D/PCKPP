@@ -1,4 +1,4 @@
-#include <pckpp/Binary/BinaryReader.h>
+#include "Binary/BinaryReader.h"
 
 BinaryReader::BinaryReader(const std::string& filepath)
 	: mStream(filepath, std::ios::binary)
