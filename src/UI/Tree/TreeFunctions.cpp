@@ -1,7 +1,7 @@
 #include <functional>
-#include <pckpp/UI/MenuFunctions.h>
-#include <pckpp/UI/Tree/TreeFunctions.h>
-#include <pckpp/Util.h>
+#include "UI/MenuFunctions.h"
+#include "UI/Tree/TreeFunctions.h"
+#include "Util/Util.h"
 
 void TreeToPCKFileCollection(std::vector<FileTreeNode>& treeNodes)
 {

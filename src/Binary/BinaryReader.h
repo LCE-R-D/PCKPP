@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pckpp/Binary/Binary.h>
+#include "Binary/Binary.h"
 
 // Barebones binary reader because it's nice I guess; inspired by miku666/NessieHax/nullptr's EndiannessAwareBinaryReader from the OMI/PCK Studio code <3
 class BinaryReader

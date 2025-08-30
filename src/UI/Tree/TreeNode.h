@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pckpp/PCK/PCKFile.h>
+#include "PCK/PCKFile.h"
 
 struct FileTreeNode {
     std::string path{};

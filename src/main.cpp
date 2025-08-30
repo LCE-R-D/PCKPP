@@ -1,10 +1,10 @@
 ﻿// PCK++ by May/MattNL :3
 
-#include <pckpp/Application.h>
-#include <pckpp/Program/Program.h>
+#include "Application/Application.h"
+#include "Program/Program.h"
 
-#include <pckpp/Backends/ImGuiSDLPlatformBackend.hpp>
-#include <pckpp/Backends/ImGuiOpenGLRendererBackend.hpp>
+#include "Backends/ImGuiSDLPlatformBackend.hpp"
+#include "Backends/ImGuiOpenGLRendererBackend.hpp"
 
 int main(int argc, char* argv[]) {
 	if (!gApp->Init(argc, argv))

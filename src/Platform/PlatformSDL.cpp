@@ -1,7 +1,7 @@
 #include <mutex>
 #include <condition_variable>
-#include <pckpp/Application.h>
-#include <pckpp/Platform/PlatformSDL.h>
+#include "Application/Application.h"
+#include "Platform/PlatformSDL.h"
 
 PlatformSDL::~PlatformSDL() {
 	Shutdown();

@@ -1,4 +1,4 @@
-#include <pckpp/PCK/PCKAssetFile.h>
+#include "PCK/PCKAssetFile.h"
 
 std::size_t PCKAssetFile::getFileSize() const {
 	return mData.size();

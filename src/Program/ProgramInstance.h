@@ -1,8 +1,8 @@
 #pragma once
 
-#include <pckpp/Binary/Binary.h>
-#include <pckpp/PCK/PCKFile.h>
-#include <pckpp/UI/Tree/TreeNode.h>
+#include "Binary/Binary.h"
+#include "PCK/PCKFile.h"
+#include "UI/Tree/TreeNode.h"
 
 class ProgramInstance {
 public:

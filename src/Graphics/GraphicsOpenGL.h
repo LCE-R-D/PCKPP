@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <glad/glad.h>
-#include <pckpp/Graphics/GraphicsBase.h>
+#include "Graphics/GraphicsBase.h"
 
 class GraphicsOpenGL : public GraphicsBase {
 public:

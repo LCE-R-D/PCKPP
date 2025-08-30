@@ -1,5 +1,5 @@
-#include <pckpp/Application.h>
-#include <pckpp/Program/ProgramInstance.h>
+#include "Application/Application.h"
+#include "Program/ProgramInstance.h"
 
 void ProgramInstance::Reset() {
     if (mCurrentPCKFile) {

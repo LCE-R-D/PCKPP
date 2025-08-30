@@ -1,9 +1,9 @@
 #pragma once
 
-#include <pckpp/Application.h>
-#include <pckpp/Binary/Binary.h>
-#include <pckpp/PCK/PCKAssetFile.h>
-#include <pckpp/UI/Tree/TreeNode.h>
+#include "Application/Application.h"
+#include "Binary/Binary.h"
+#include "PCK/PCKAssetFile.h"
+#include "UI/Tree/TreeNode.h"
 
 // Saves PCK file from tree nodes
 void SavePCK(std::vector<FileTreeNode> nodes, Binary::Endianness endianness, const std::string& path = "", const std::string& defaultName = "");

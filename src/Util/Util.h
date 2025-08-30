@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pckpp/PCK/PCKAssetFile.h>
+#include "PCK/PCKAssetFile.h"
 #include <codecvt>
 #include <locale>
 #include <sstream>

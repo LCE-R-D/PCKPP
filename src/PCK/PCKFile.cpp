@@ -1,7 +1,7 @@
 #include <set>
-#include <pckpp/PCK/PCKFile.h>
-#include <pckpp/Binary/BinaryReader.h>
-#include <pckpp/Binary/BinaryWriter.h>
+#include "PCK/PCKFile.h"
+#include "Binary/BinaryReader.h"
+#include "Binary/BinaryWriter.h"
 
 const char* XML_VERSION_STRING{ "XMLVERSION" }; // used for advanced/full box support for skins
 
